@@ -1,4 +1,4 @@
 otbo
 ====
 
-2de test
+Speler, Thom, Bor, Speler
