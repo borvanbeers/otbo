@@ -1,22 +1,18 @@
+var images = ["CrazyWolf.jpg", "CrazyWolf.jpg", "CrazyWolf.jpg", "CrazyWolf.jpg"];
+var name = "";
+
 var loadCount = 0;
-var imagesToLoad = 0;
-
-function init()
-{
-	imagesToLoad = 1;
-
-	wolfImage = preload("CrazyWolf.jpg");
-}
+var imagesToLoad = images.length;
 
 function preload(path)
 {
         img = new Image();
         img.src = path;
-        img.onload = itemLoaded;
+        img.onload = imageLoaded;
         return img;
 };
 
-function itemLoaded(event) 
+function imageLoaded(event) 
 {
         loadCount++;
         console.log("Loading:" + loadCount);
@@ -26,11 +22,23 @@ function itemLoaded(event)
             console.log("All images are loaded!");
 	        //Images done loading 
 	        //Start next function
-            nextFuntion();
         }
 };
 
-function nextFuntion()
+function makeImages()
 {
-    console.log("Next function called!");
+    for(var i = images.length; i > 0; i--)
+    {
+        source = images.shift();
+        preload(source);
+        var name = source.replace(".jpg", "Image");
+        console.log(name);
+
+        //make vars with as name, var name
+
+        if(i==0) console.log("Loop ended");
+    }
 }
+
+
+
