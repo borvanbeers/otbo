@@ -113,6 +113,10 @@
 		var xDistance = (mouseCurrent.x - mouseStart.position.getX()); // subtract the X distances from each other. 
         var yDistance = (mouseCurrent.y - mouseStart.position.getY()); // subtract the Y distances from each other. 
         //var distanceBetween = Math.sqrt((xDistance * xDistance) + (yDistance *yDistance));
+
+        pythagoras(xDistance, yDistance);
+
+
 		mouseStart.velocity.setX(xDistance / 100);
 		mouseStart.velocity.setY(yDistance / 100);
 		//mouseStart.velocity = mouseStart.velocity.divide(distanceBetween);
@@ -274,6 +278,12 @@
 			balls.push(ball);
 		}
 	} 
+
+	function pythagoras(a, b)
+	{
+		var lineLength = Math.sqrt((a*a) + (b*b));
+		console.log(lineLength);
+	}
 	 
 	function init(){
         makeImages(['CrazyWolf.jpg'], function (i) {
