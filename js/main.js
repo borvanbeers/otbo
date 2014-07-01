@@ -118,14 +118,9 @@
 	function plotMouseForce(){	
 		var xDistance = (mouseCurrent.x - mouseStart.position.getX()); // subtract the X distances from each other. 
         var yDistance = (mouseCurrent.y - mouseStart.position.getY()); // subtract the Y distances from each other. 
-<<<<<<< HEAD
         //var distanceBetween = Math.sqrt((xDistance * xDistance) + (yDistance *yDistance));
-
         pythagoras(xDistance, yDistance);
 
-
-=======
->>>>>>> origin/master
 		mouseStart.velocity.setX(xDistance / 100);
 		mouseStart.velocity.setY(yDistance / 100);
 		//reset the mouseStart pointer
