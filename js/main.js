@@ -20,19 +20,26 @@
 	//Set width/height to 100&
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
-	//Detect mouseIsdown
-	canvas.addEventListener('mousedown', function(e){		
+	
+	//Mouse/Touch events
+	function mouseDown(e){		
 		mouseIsDown = detectClick(e);
-	});
-	canvas.addEventListener('mouseup', function(e){
+	}
+	function mouseUp(e){
 		if(mouseIsDown){
 			plotMouseForce();
 			mouseIsDown = false;
 		}		
-	});
-	canvas.addEventListener('mousemove', function(e){
+	}
+	function mouseMove(e){
 		mouseCurrent = getMousePos(canvas, e);
-	});
+	}
+	canvas.addEventListener('mousedown', mouseDown);
+	canvas.addEventListener('mouseup', mouseUp);
+	canvas.addEventListener('mousemove', mouseMove);
+	canvas.addEventListener('touchstart', mouseDown);
+	canvas.addEventListener('touchend', mouseUp);
+	canvas.addEventListener('touchmove', mouseMove);
 	/*
 	 * Helper methods
 	 */
@@ -109,26 +116,23 @@
 	}
 	
 	function plotMouseForce(){	
-		//var cur = new Otbo.vector(mouseCurrent.x,mouseCurrent.y);
 		var xDistance = (mouseCurrent.x - mouseStart.position.getX()); // subtract the X distances from each other. 
         var yDistance = (mouseCurrent.y - mouseStart.position.getY()); // subtract the Y distances from each other. 
-        //var distanceBetween = Math.sqrt((xDistance * xDistance) + (yDistance *yDistance));
 		mouseStart.velocity.setX(xDistance / 100);
 		mouseStart.velocity.setY(yDistance / 100);
-		//mouseStart.velocity = mouseStart.velocity.divide(distanceBetween);
-
-		//mouseStart.velocity = mouseStart.velocity.add(cur);
+		//reset the mouseStart pointer
 		mouseStart = null;
 	}
 	
 	function drawObjects(){		
-		//Draw 
-		//ctx.drawImage(Otbo.img.CrazyWolf, 0, 0);
+		//Draw image
+		/* /
+		ctx.drawImage(Otbo.img.CrazyWolf, 0, 0);
 		var pattern = ctx.createPattern(Otbo.img.CrazyWolf, 'repeat');
         ctx.rect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = pattern;
         ctx.fill();
-	
+		/* */
 	
 		//Draw balls
 		for(var i = balls.length; i--;){
