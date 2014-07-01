@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-=======
+
 /* /
 var images = ["CrazyWolf.jpg", "CrazyWolf.jpg", "CrazyWolf.jpg", "CrazyWolf.jpg"];
 var name = "";
@@ -79,7 +78,3 @@ function makeImages()
 	
 }());
 /* */
-
-
-
->>>>>>> origin/master
