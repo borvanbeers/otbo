@@ -6,6 +6,7 @@
 	 * Constants
 	 */
 	var FRICTION = 0.1,
+		RADIAN = Math.PI/180;
 		LINE_LENGTH = 100;
 	/*
 	 * Global variables
@@ -128,24 +129,26 @@
 	}
 	
 	function drawObjects(){		
-		//Draw image
-		/* /
-		ctx.drawImage(Otbo.img.CrazyWolf, 0, 0);
-		var pattern = ctx.createPattern(Otbo.img.CrazyWolf, 'repeat');
-        ctx.rect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = pattern;
-        ctx.fill();
-		/* */
+		//Draw background
+		ctx.beginPath();
+		ctx.rect(0,0,canvas.width,canvas.height);
+		ctx.fillStyle = 'black';
+		ctx.fill();
 	
 		//Draw balls
 		for(var i = balls.length; i--;){
 			var ball = balls[i];
+			ctx.save();		
+			ctx.translate(ball.position.x, ball.position.y);
+			ctx.rotate(ball.life(ball.velocity.getX()*2) * RADIAN);			
 			ctx.beginPath();
-			ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
-			ctx.fillStyle = ball.color;
-			ctx.fill();
-		}
-		
+			ctx.arc(0,0, ball.radius, 0, 2 * Math.PI, false);
+			ctx.closePath();
+			ctx.clip();			
+			ctx.drawImage(Otbo.img.CrazyWolf, -ball.radius,-ball.radius, ball.radius*2,ball.radius*2);
+			ctx.closePath();
+			ctx.restore();
+		}		
 		
 		//Draw mouse line
 		if(mouseIsDown){
@@ -154,6 +157,7 @@
 			ctx.lineTo(mouseCurrent.x, mouseCurrent.y);
 			ctx.lineWidth = 5;
 			ctx.lineCap = 'round';
+			ctx.strokeStyle = 'white';
 			ctx.stroke();
 		}
 	}
@@ -167,12 +171,12 @@
 	
     function checkWallCollision(ballArray) {
         for (var i = 0; i < ballArray.length; i++) {
-            /*##### Collisions on the X axis ##### */
+		
             if (ballArray[i].getX() + (ballArray[i].getRadius()) >= canvas.width || ballArray[i].getX() - (ballArray[i].getRadius()) <= 0) {
                 ballArray[i].velocity.setX(-ballArray[i].velocity.getX()); // if collided with a wall on x Axis, reflect Velocity.X.
                 ballArray[i].position = ballArray[i].lastGoodPosition; // reset ball to the last good position (Avoid objects getting stuck in each other).
             }
-            /*##### Collisions on the Y axis ##### */
+			
             if (ballArray[i].getY() - (ballArray[i].getRadius()) <= 0 || ballArray[i].getY() + (ballArray[i].getRadius()) >= canvas.height) { // check for y collisions.
                 ballArray[i].velocity.setY(-ballArray[i].velocity.getY()); // if collided with a wall on x Axis, reflect Velocity.X. 
                 ballArray[i].position = ballArray[i].lastGoodPosition;
@@ -197,32 +201,23 @@
     function ballCollisionResponce(ball1, ball2) {
         ball1.position = ball1.lastGoodPosition;
         ball2.position = ball2.lastGoodPosition;
-
         var xDistance = (ball2.getX() - ball1.getX());
         var yDistance = (ball2.getY() - ball1.getY());
-
         var normalVector = new Otbo.vector(xDistance, yDistance); // normalise this vector store the return value in normal vector.
         normalVector = normalVector.normalise();
-
-        var tangentVector = new Otbo.vector((normalVector.getY() * -1), normalVector.getX());
-       
+        var tangentVector = new Otbo.vector((normalVector.getY() * -1), normalVector.getX());       
         // create ball scalar normal direction.
         var ball1scalarNormal =  normalVector.dot(ball1.velocity);
         var ball2scalarNormal = normalVector.dot(ball2.velocity);
-
         // create scalar velocity in the tagential direction.
         var ball1scalarTangential = tangentVector.dot(ball1.velocity); 
         var ball2scalarTangential = tangentVector.dot(ball2.velocity); 
-
         var ball1ScalarNormalAfter = (ball1scalarNormal * (ball1.getMass() - ball2.getMass()) + 2 * ball2.getMass() * ball2scalarNormal) / (ball1.getMass() + ball2.getMass());
         var ball2ScalarNormalAfter = (ball2scalarNormal * (ball2.getMass() - ball1.getMass()) + 2 * ball1.getMass() * ball1scalarNormal) / (ball1.getMass() + ball2.getMass());
-
         var ball1scalarNormalAfter_vector = normalVector.multiply(ball1ScalarNormalAfter); // ball1Scalar normal doesnt have multiply not a vector.
         var ball2scalarNormalAfter_vector = normalVector.multiply(ball2ScalarNormalAfter);
-
         var ball1ScalarNormalVector = (tangentVector.multiply(ball1scalarTangential));
-        var ball2ScalarNormalVector = (tangentVector.multiply(ball2scalarTangential));;
-
+        var ball2ScalarNormalVector = (tangentVector.multiply(ball2scalarTangential));
         ball1.velocity = ball1ScalarNormalVector.add(ball1scalarNormalAfter_vector);
         ball2.velocity = ball2ScalarNormalVector.add(ball2scalarNormalAfter_vector);
     }
@@ -271,12 +266,7 @@
 				~~(Math.random() * (canvas.height-size*2)) + size,
 				size,
 				/* */
-				0,0,
-				/* /
-				~~(Math.random() * 3) -1,
-				~~(Math.random() * 3) -1,
-				/* */
-				'#'+Math.floor(Math.random()*16777215).toString(16)
+				0,0
 			);
 			balls.push(ball);
 		}

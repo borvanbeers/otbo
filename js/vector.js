@@ -1,6 +1,5 @@
 Otbo.vector = (function () {
-	var x;
-	var y;
+	var x, y;
 	function vector() { };
 	function vector(x, y) {
 		this.setX(x);
