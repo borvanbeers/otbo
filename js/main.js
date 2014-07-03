@@ -26,6 +26,7 @@
 
     //Mouse/Touch events
     function mouseDown(e) {
+        e.preventDefault();
         mouseIsDown = detectClick(e);
     }
     function mouseUp(e) {
