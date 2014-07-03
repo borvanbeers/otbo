@@ -1,16 +1,6 @@
-Otbo.ball = (function (context) {
-    var position,
-		lastGoodPosition,
-		velocity,
-		radius,
-		mass,
-		color,
-		x,
-		y,
-		lifeTime;
-
-    function ball(x,y,radiusMass,velX,velY,color) { // constructor
-	//function ball(inX,inY,inRadiusMass,inVelX,inVelY, inColor) {
+Otbo.ball = (function () {
+    // constructor
+    function ball(x,y,radiusMass,velX,velY,color) { 
         this.position = new Otbo.vector();
         this.position.setX(x);
 		this.position.setY(y);

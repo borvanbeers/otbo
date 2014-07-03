@@ -6,7 +6,9 @@
 	 * Constants
 	 */
 	var FRICTION = 0.1,
-		RADIAN = Math.PI/180;
+		RADIAN = Math.PI/180,
+		GRAVITY = new Otbo.vector(0, 0.4),
+		FRICTION = 0.30,
 		LINE_LENGTH = 100;
 	/*
 	 * Global variables
@@ -164,22 +166,27 @@
 	
 	function updateBallPos(ballArray) {
         for (var i = 0; i < ballArray.length; i++) {
-            ballArray[i].lastGoodPosition = ballArray[i].position; // save the balls last good position.
-            ballArray[i].position = ballArray[i].position.add((ballArray[i].velocity.multiply(2))); // add the balls (velocity * 6) to position. 
+			var ball = ballArray[i];
+			ball.lastGoodPosition = ball.position; // save the balls last good position.
+            ball.position = ball.position.add((ball.velocity.multiply(2))); // add the balls (velocity * 6) to position.
+			//ball.velocity = ball.velocity.add(GRAVITY);//.multiply(0.01));
         }
     }
 	
     function checkWallCollision(ballArray) {
         for (var i = 0; i < ballArray.length; i++) {
-		
-            if (ballArray[i].getX() + (ballArray[i].getRadius()) >= canvas.width || ballArray[i].getX() - (ballArray[i].getRadius()) <= 0) {
-                ballArray[i].velocity.setX(-ballArray[i].velocity.getX()); // if collided with a wall on x Axis, reflect Velocity.X.
-                ballArray[i].position = ballArray[i].lastGoodPosition; // reset ball to the last good position (Avoid objects getting stuck in each other).
+			var ball = ballArray[i];
+			
+            if (ball.getX() + (ball.getRadius()) >= canvas.width || ball.getX() - (ball.getRadius()) <= 0) {
+                ball.velocity.setX(-ball.velocity.getX()); // if collided with a wall on x Axis, reflect Velocity.X.
+				//ball.velocity.setY(ball.velocity.getY() * FRICTION);
+                ball.position = ball.lastGoodPosition; // reset ball to the last good position (Avoid objects getting stuck in each other).
             }
 			
-            if (ballArray[i].getY() - (ballArray[i].getRadius()) <= 0 || ballArray[i].getY() + (ballArray[i].getRadius()) >= canvas.height) { // check for y collisions.
-                ballArray[i].velocity.setY(-ballArray[i].velocity.getY()); // if collided with a wall on x Axis, reflect Velocity.X. 
-                ballArray[i].position = ballArray[i].lastGoodPosition;
+            if (ball.getY() - (ball.getRadius()) <= 0 || ball.getY() + (ball.getRadius()) >= canvas.height) { // check for y collisions.
+                ball.velocity.setY(-ball.velocity.getY()); // if collided with a wall on y Axis, reflect Velocity.Y.
+				//ball.velocity.setX(ball.velocity.getX() * FRICTION);
+                ball.position = ball.lastGoodPosition;
             }
         }
     }
@@ -187,7 +194,7 @@
     function checkBallCollision(ball1, ball2) {
         var xDistance = (ball2.getX() - ball1.getX()); // subtract the X distances from each other. 
         var yDistance = (ball2.getY() - ball1.getY()); // subtract the Y distances from each other. 
-        var distanceBetween = Math.sqrt((xDistance * xDistance) + (yDistance *yDistance)); // the distance between the balls is the sqrt of X squard + Ysquared. 
+        var distanceBetween = Math.sqrt((xDistance * xDistance) + (yDistance *yDistance)); // the distance between the balls is the sqrt of Xsquared + Ysquared. 
         var sumOfRadius = ((ball1.getRadius()) + (ball2.getRadius())); // add the balls radius together
 
         if (distanceBetween < sumOfRadius) { // if the distance between them is less than the sum of radius they have collided. 

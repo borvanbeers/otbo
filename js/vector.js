@@ -1,6 +1,5 @@
 Otbo.vector = (function () {
-	var x, y;
-	function vector() { };
+    //constructor
 	function vector(x, y) {
 		this.setX(x);
 		this.setY(y);
@@ -8,54 +7,52 @@ Otbo.vector = (function () {
 	
 	vector.prototype.getX = function () {return this.x; };
 	vector.prototype.setX = function (x) { this.x = x; };
-
 	vector.prototype.getY = function () { return this.y;};
 	vector.prototype.setY = function (y) { this.y = y; };
-
 	vector.prototype.setXandY = function (x, y) {
-		this.setX(x);
-		this.setY(y);
-		return this;
+	    this.x = x;
+	    this.y = y;
 	}
 	vector.prototype.getMagnitude = function(){ return this.magnitude; }
-
 	
 	// Vector functions
-	vector.prototype.add = function(otherVector){
-		var newX = this.getX() + otherVector.getX();
-		var newY = this.getY() + otherVector.getY();
-		return new vector(newX, newY);
+	vector.prototype.add = function (otherVector) {
+	    var x = this.x + otherVector.getX();
+	    var y = this.y + otherVector.getY();
+	    return new vector(x, y);
 	}
 
-	vector.prototype.subtract = function (otherVector) {        
-		var newX = this.getX() - otherVector.getX();
-		var newY = this.getY() - otherVector.getY();
-		return new vector(newX, newY);
+	vector.prototype.subtract = function (otherVector) {
+	    var x = this.x - otherVector.getX();
+	    var y = this.y - otherVector.getY();
+	    return new vector(x, y);
 	}
-	
+
 	vector.prototype.multiply = function (scalar) {
-		var newX = this.getX() * scalar;
-		var newY = this.getY() * scalar;
-		//this.setX(this.getX() * scalar);
-		//this.setY(this.getY() * scalar);
-		return new vector(newX,newY);
+	    var x = this.x * scalar;
+	    var y = this.y * scalar;
+	    return new vector(x, y);
 	}
 
 	vector.prototype.divide = function (scalar) {
-		this.setX(this.getX() / scalar);
-		this.setY(this.getY() / scalar);
-		return new vector(this.x, this.y);
+	    var x = this.x,
+			y = this.y;
+	    if (x && y) {
+	        x /= scalar;
+	        y /= scalar;
+	    }
+	    return new vector(x, y);
 	}
 
 	vector.prototype.normalise = function () {
-		var newX = this.x;
-		var newY = this.y;
-		var xsquared = this.x * this.x;
-		var ysquared = this.y * this.y;
-		var distance = Math.sqrt(xsquared + ysquared);
-		newX = newX * (1.0 / distance);
-		newY = newY * (1.0 / distance);
-		return new vector(newX, newY);
+	    var x = this.x,
+			y = this.y,
+            xsquared = this.x * this.x,
+            ysquared = this.y * this.y,
+            distance = Math.sqrt(xsquared + ysquared);
+	    x = x * (1.0 / distance);
+	    y = y * (1.0 / distance);
+	    return new vector(x, y);
 	}
 
 	vector.prototype.magnitude = function () {
@@ -66,9 +63,9 @@ Otbo.vector = (function () {
 	vector.prototype.dot = function (otherVector) {
 		var dotProduct = ((this.x * otherVector.getX()) + (this.y * otherVector.getY()));
 		return dotProduct;
-		//var newX = this.x * otherVector.getX();
-		//var newY = this.y * otherVector.getY();
-		//return new vector(newX,newY);
+	    //x *= otherVector.getX();
+	    //y *= otherVector.getY();
+	    //return new vector(x,y);
 	}
 
 	return vector;
