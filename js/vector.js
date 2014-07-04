@@ -13,7 +13,6 @@ Otbo.vector = (function () {
 	    this.x = x;
 	    this.y = y;
 	}
-	vector.prototype.getMagnitude = function(){ return this.magnitude; }
 	
 	// Vector functions
 	vector.prototype.add = function (otherVector) {

@@ -5,10 +5,7 @@
     /*
 	 * Constants
 	 */
-    var FRICTION = 0.1,
-		RADIAN = Math.PI / 180,
-		GRAVITY = new Otbo.vector(0, 0.4),
-		FRICTION = 0.30,
+    var FRICTION = 0.98,
 		LINE_LENGTH = 100;
     /*
 	 * Global variables
@@ -47,6 +44,11 @@
     /*
 	 * Helper methods
 	 */
+    //Get radian from degrees
+    function getRadian(rad) {
+        rad = rad || 360;
+        return rad * Math.PI / 180;
+    }
     // Mouse
     function getMousePos(canvas, evt) {
         var rect = canvas.getBoundingClientRect();
@@ -72,18 +74,15 @@
             img.src = images[i];
             result[name] = img;
         }
-        console.log("Loop ended");
     }
-    //Fast circle vs circle collision detection
-    function circlevscircle(circle1, circle2) {
-        return (Math.sqrt(Math.pow(circle1.position.x - circle2.position.x, 2) +
-                Math.pow(circle1.position.y - circle2.position.y, 2))) < circle1.radius + circle2.radius;
+    //Point in circle detection
+    function pointInCircle(circle, point) {
+        return (Math.sqrt(Math.pow(circle.position.x - point.x, 2) +
+                          Math.pow(circle.position.y - point.y, 2))) < circle.radius;
     }
     //Pythagoras
     function pythagoras(a, b) {
-        var lineLength = Math.sqrt((a * a) + (b * b));
-        console.log(lineLength);
-        return lineLength;
+        return Math.sqrt((a * a) + (b * b));
     }
     //clamp a value to a minimum or maximum
     function clamp(n, min, max) {
@@ -91,7 +90,6 @@
         if (n > max) return max;
         return n;
     }
-
 
     /*
 	 * Classes
@@ -106,19 +104,13 @@
 	 * Main functions
 	 */
     function detectClick(e) {
-        var click = getMousePos(canvas, e);
-        clickObject = {
-            position: {
-                x: click.x,
-                y: click.y
-            },
-            radius: 1
-        }
+        var click = getMousePos(canvas, e),
+            clickObject = new Otbo.vector(click.x, click.y);
 
         for (var i = balls.length; i--;) {
             var ball = balls[i];
 
-            if (circlevscircle(ball, clickObject)) {
+            if (pointInCircle(ball, clickObject)) {
                 mouseStart = ball;
                 return true;
             };
@@ -127,12 +119,14 @@
     }
 
     function plotMouseForce() {
-        var xDistance = (mouseCurrent.x - mouseStart.position.getX()); // subtract the X distances from each other. 
-        var yDistance = (mouseCurrent.y - mouseStart.position.getY()); // subtract the Y distances from each other. 
-        pythagoras(xDistance, yDistance);
+        var speed = 60,
+            xDistance = (mouseCurrent.x - mouseStart.position.getX()), // subtract the X distances from each other.
+            yDistance = (mouseCurrent.y - mouseStart.position.getY()); // subtract the Y distances from each other.
 
-        mouseStart.velocity.setX(xDistance / 100);
-        mouseStart.velocity.setY(yDistance / 100);
+        console.log(pythagoras(xDistance, yDistance));//get distance
+
+        mouseStart.velocity.setX(xDistance / speed);
+        mouseStart.velocity.setY(yDistance / speed);
         //reset the mouseStart pointer
         mouseStart = null;
     }
@@ -149,7 +143,7 @@
             var ball = balls[i];
             ctx.save();
             ctx.translate(ball.position.x, ball.position.y);
-            ctx.rotate(ball.life(ball.velocity.getX() * 2) * RADIAN);
+            ctx.rotate(ball.life(ball.velocity.getX() * 2) * (Math.PI / 180));
             ctx.beginPath();
             ctx.arc(0, 0, ball.radius, 0, 2 * Math.PI, false);
             ctx.closePath();
@@ -162,7 +156,9 @@
         //Draw mouse line
         if (mouseIsDown) {
             ctx.beginPath();
-            ctx.moveTo(mouseStart.position.x, mouseStart.position.y);
+            var x = mouseStart.position.getX(),
+                y = mouseStart.position.getY();
+            ctx.moveTo(x, y);
             ctx.lineTo(mouseCurrent.x, mouseCurrent.y);
             ctx.lineWidth = 5;
             ctx.lineCap = 'round';
@@ -171,30 +167,21 @@
         }
     }
 
-    function updateBallPos(ballArray) {
-        for (var i = 0; i < ballArray.length; i++) {
-            var ball = ballArray[i];
-            ball.lastGoodPosition = ball.position; // save the balls last good position.
-            ball.position = ball.position.add((ball.velocity.multiply(2))); // add the balls (velocity * 6) to position.
-            //ball.velocity = ball.velocity.add(GRAVITY);//.multiply(0.01));
-        }
+    function updateBallPos(ball) {
+        ball.lastGoodPosition = ball.position; // save the balls last good position.            
+        ball.position = ball.position.add((ball.velocity.multiply(8))); // add the balls (velocity * 6) to position.
+        ball.velocity = ball.velocity.multiply(FRICTION); // add friction to decelerate balls
     }
 
-    function checkWallCollision(ballArray) {
-        for (var i = 0; i < ballArray.length; i++) {
-            var ball = ballArray[i];
+    function checkWallCollision(ball) {
+        if (ball.getX() + (ball.getRadius()) >= canvas.width || ball.getX() - (ball.getRadius()) <= 0) {
+            ball.velocity.setX(-ball.velocity.getX()); // if collided with a wall on x Axis, reflect Velocity.X.
+            ball.position = ball.lastGoodPosition; // reset ball to the last good position (Avoid objects getting stuck in each other).
+        }
 
-            if (ball.getX() + (ball.getRadius()) >= canvas.width || ball.getX() - (ball.getRadius()) <= 0) {
-                ball.velocity.setX(-ball.velocity.getX()); // if collided with a wall on x Axis, reflect Velocity.X.
-                //ball.velocity.setY(ball.velocity.getY() * FRICTION);
-                ball.position = ball.lastGoodPosition; // reset ball to the last good position (Avoid objects getting stuck in each other).
-            }
-
-            if (ball.getY() - (ball.getRadius()) <= 0 || ball.getY() + (ball.getRadius()) >= canvas.height) { // check for y collisions.
-                ball.velocity.setY(-ball.velocity.getY()); // if collided with a wall on y Axis, reflect Velocity.Y.
-                //ball.velocity.setX(ball.velocity.getX() * FRICTION);
-                ball.position = ball.lastGoodPosition;
-            }
+        if (ball.getY() - (ball.getRadius()) <= 0 || ball.getY() + (ball.getRadius()) >= canvas.height) { // check for y collisions.
+            ball.velocity.setY(-ball.velocity.getY()); // if collided with a wall on y Axis, reflect Velocity.Y.
+            ball.position = ball.lastGoodPosition;
         }
     }
 
@@ -203,13 +190,7 @@
         var yDistance = (ball2.getY() - ball1.getY()); // subtract the Y distances from each other. 
         var distanceBetween = pythagoras(xDistance, yDistance); // the distance between the balls is the sqrt of Xsquared + Ysquared.
         var sumOfRadius = ((ball1.getRadius()) + (ball2.getRadius())); // add the balls radius together
-
-        if (distanceBetween < sumOfRadius) { // if the distance between them is less than the sum of radius they have collided. 
-            return true;
-        }
-        else {
-            return false;
-        }
+        return (distanceBetween < sumOfRadius); // if the distance between them is less than the sum of radius they have collided.
     }
 
     function ballCollisionResponce(ball1, ball2) {
@@ -239,6 +220,7 @@
     /*
 	 * Gameloop
 	 */
+    var loops = 0;
     function loop() {
         clear();
         update();
@@ -249,14 +231,17 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     function update() {
-        //Initiate pyramid of doom
-        updateBallPos(balls);
-        checkWallCollision(balls);
-        for (var i = 0; i < balls.length; i++) {
-            for (var j = 0; j < balls.length; j++) {
-                if (balls[i] != balls[j]) {
-                    if (checkBallCollision(balls[i], balls[j])) {
-                        ballCollisionResponce(balls[i], balls[j]);
+        loops++;
+        for (var i = balls.length; i--;) {
+            var iBall = balls[i];
+            updateBallPos(iBall);
+            checkWallCollision(iBall);
+
+            for (var j = balls.length; j--;) {
+                var jBall = balls[j];
+                if (iBall != jBall) {
+                    if (checkBallCollision(iBall, jBall)) {
+                        ballCollisionResponce(iBall, jBall);
                     }
                 }
             }
