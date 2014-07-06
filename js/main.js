@@ -12,10 +12,14 @@
 	 */
     var canvas = document.getElementById('otbo'),
 		ctx = canvas.getContext('2d'),
+        gameActive = false,
 		mouseIsDown = false,
 		mouseStart,
 		mouseCurrent,
-		balls = [];
+		balls = [],
+		players = [],
+        numberOfPlayers = 2,
+		currentPlayer = 0;
 
     //Set width/height to 100&
     canvas.width = window.innerWidth;
@@ -24,12 +28,16 @@
     //Mouse/Touch events
     function mouseDown(e) {
         e.preventDefault();
-        mouseIsDown = detectClick(e);
+
+        if (!gameActive) {
+            mouseIsDown = detectClick(e);
+        }
     }
     function mouseUp(e) {
         if (mouseIsDown) {
             plotMouseForce();
             mouseIsDown = false;
+            gameActive = true;
         }
     }
     function mouseMove(e) {
@@ -91,6 +99,17 @@
         return n;
     }
 
+    //Randomize array element order in-place. Using Fisher-Yates shuffle algorithm.
+    function shuffleArray(array) {
+        for (var i = array.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+        }
+        return array;
+    }
+
     /*
 	 * Classes
 	 */
@@ -131,11 +150,29 @@
         mouseStart = null;
     }
 
+    function drawHud() {
+
+        for (var i = 0, l = players.length; i < l; i++) {
+            var player = players[i],
+                fixedWidth = 10,
+                x = i & 1 ? fixedWidth : canvas.width - fixedWidth;
+
+            for (var o = 0, j = player.balls.length; j--;) {                
+                var ballSize = player.balls[j] / 30;
+                ctx.beginPath();
+                ctx.arc(x, 10 + 10 * o, ballSize, 0, 2 * Math.PI, false);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                o++;
+            }            
+        }
+    }
+
     function drawObjects() {
         //Draw background
         ctx.beginPath();
         ctx.rect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = mouseIsDown? '#090909':'black';
+        ctx.fillStyle = '#333';
         ctx.fill();
 
         //Draw balls
@@ -143,12 +180,12 @@
             var ball = balls[i];
             ctx.save();
             ctx.translate(ball.position.x, ball.position.y);
-            ctx.rotate(ball.life(ball.velocity.getX() * 2) * (Math.PI / 180));
+            ctx.rotate(ball.life(ball.velocity.getX() * 16) * (Math.PI / 180));
             ctx.beginPath();
             ctx.arc(0, 0, ball.radius, 0, 2 * Math.PI, false);
             ctx.closePath();
             ctx.clip();
-            ctx.drawImage(Otbo.img.CrazyWolf, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
+            ctx.drawImage(players[ball.owner].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
             ctx.closePath();
             ctx.restore();
         }
@@ -220,7 +257,6 @@
     /*
 	 * Gameloop
 	 */
-    var loops = 0;
     function loop() {
         clear();
         update();
@@ -231,9 +267,12 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     function update() {
-        loops++;
+        var moving = 0;
+
         for (var i = balls.length; i--;) {
-            var iBall = balls[i];
+            var iBall = balls[i],
+                mag = iBall.velocity.magnitude();
+            
             updateBallPos(iBall);
             checkWallCollision(iBall);
 
@@ -245,10 +284,21 @@
                     }
                 }
             }
+
+            if (mag > 0.001) {
+                moving++;
+            }
+        }
+
+        if (gameActive && moving === 0) {
+            currentPlayer = ++currentPlayer % numberOfPlayers;
+            nextMove();
+            gameActive = false;
         }
     }
     function draw() {
         drawObjects();
+        drawHud();
     }
     function queue() {
         window.requestAnimationFrame(loop);
@@ -270,10 +320,41 @@
         }
     }
 
+    function initGame() {
+        var beginBalls = [30, 30, 60, 60, 90, 90];
+
+        for (var i = 0, l = numberOfPlayers; i < l; i++) {
+            players.push({
+                score: 0,
+                img: i & 1 ? Otbo.img.CrazyWolf : Otbo.img.spiral,
+                balls: shuffleArray(beginBalls.slice(0))
+            });
+        }        
+        currentPlayer = Math.floor(Math.random() * numberOfPlayers);
+        nextMove();
+    }
+
+    function nextMove(){
+        var size = players[currentPlayer].balls.shift(),
+            fixedWidth = 100;
+        var ball = new Otbo.ball(
+            currentPlayer & 1 ? fixedWidth : canvas.width - fixedWidth,
+            canvas.height / 2,
+            size,
+            0, 0,
+            currentPlayer
+        );
+        balls.push(ball);
+    }
+
     function init() {
-        makeImages(['CrazyWolf.jpg'], function (i) {
+        makeImages(['CrazyWolf.jpg','spiral.jpg'], function (i) {
             Otbo.img = i;
+            /* /
             createRandomBalls();
+            /* */
+            initGame();
+            /* */
             loop();
         });
     }

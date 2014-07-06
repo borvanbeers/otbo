@@ -1,6 +1,6 @@
 Otbo.ball = (function () {
     // constructor
-    function ball(x,y,radiusMass,velX,velY,color) { 
+    function ball(x,y,radiusMass,velX,velY,owner) { 
         this.position = new Otbo.vector();
         this.position.setX(x);
 		this.position.setY(y);
@@ -11,7 +11,8 @@ Otbo.ball = (function () {
 
         this.setRadius(radiusMass);
         this.setMass(radiusMass);
-        this.setColor(color);		
+        //this.setColor(color);
+        this.owner = owner;
 		this.lifeTime = 0;
     }
 
@@ -26,8 +27,8 @@ Otbo.ball = (function () {
 
     ball.prototype.setMass = function (mass) { this.mass = mass;}
     ball.prototype.getMass = function () { return this.mass;}
-    ball.prototype.setColor = function (color) { this.color = color;}
-    ball.prototype.getColor = function () { return this.color;}
+    //ball.prototype.setColor = function (color) { this.color = color;}
+    //ball.prototype.getColor = function () { return this.color;}
 	ball.prototype.life = function(life){ return this.lifeTime+=life;}
     return ball;
 })();
