@@ -31,13 +31,13 @@
         middleHeight = canvas.height / 2;
 
     //Mouse/Touch events
-    function mouseDown(e) {
-        e.preventDefault();
+    function mouseDown(e) {        
 
         if (!gameActive) {
             var click = getMousePos(canvas, e);
             mouseIsDown = detectClick(click);
         }
+        e.preventDefault();
     }
     function mouseUp(e) {
         if (mouseIsDown) {
@@ -45,16 +45,18 @@
             mouseIsDown = false;
             gameActive = true;
         }
+        e.preventDefault();
     }
     function mouseMove(e) {
         mouseCurrent = getMousePos(canvas, e);
+        e.preventDefault();
     }
-    canvas.addEventListener('mousedown', mouseDown);
-    canvas.addEventListener('mouseup', mouseUp);
-    canvas.addEventListener('mousemove', mouseMove);
-    canvas.addEventListener('touchstart', mouseDown);
-    canvas.addEventListener('touchend', mouseUp);
-    canvas.addEventListener('touchmove', mouseMove);
+    canvas.addEventListener('mousedown', mouseDown, false);
+    canvas.addEventListener('mouseup', mouseUp, false);
+    canvas.addEventListener('mousemove', mouseMove, false);
+    canvas.addEventListener('touchstart', mouseDown, false);
+    canvas.addEventListener('touchend', mouseUp, false);
+    canvas.addEventListener('touchmove', mouseMove, false);
     /*
 	 * Helper methods
 	 */
@@ -80,10 +82,9 @@
     }
     // Mouse
     function getMousePos(canvas, evt) {
-        var rect = canvas.getBoundingClientRect();
         return {
-            x: getX(evt) - rect.left,
-            y: getY(evt) - rect.top
+            x: getX(evt),
+            y: getY(evt)
         };
     }
     //Load images and execute a function after loading
