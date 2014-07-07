@@ -31,25 +31,25 @@
         middleHeight = canvas.height / 2;
 
     //Mouse/Touch events
-    function mouseDown(e) {        
+    function mouseDown(event) {        
 
         if (!gameActive) {
-            var click = getMousePos(canvas, e);
+            var click = getMousePos(canvas, event);
             mouseIsDown = detectClick(click);
         }
-        e.preventDefault();
+        event.preventDefault();
     }
-    function mouseUp(e) {
+    function mouseUp(event) {
         if (mouseIsDown) {
             plotMouseForce();
             mouseIsDown = false;
             gameActive = true;
         }
-        e.preventDefault();
+        event.preventDefault();
     }
-    function mouseMove(e) {
-        mouseCurrent = getMousePos(canvas, e);
-        e.preventDefault();
+    function mouseMove(event) {
+        mouseCurrent = getMousePos(canvas, event);
+        event.preventDefault();
     }
     canvas.addEventListener('mousedown', mouseDown, false);
     canvas.addEventListener('mouseup', mouseUp, false);
@@ -75,7 +75,7 @@
 
     function getY(event) {
         if (~event.type.indexOf("touch")) {
-            return event.targetTouches[0].pageY - headerHeight;
+            return event.targetTouches[0].pageY;
         } else {
             return event.layerY;
         }
