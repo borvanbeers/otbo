@@ -5,7 +5,7 @@
     /*
 	 * Constants
 	 */
-    var FRICTION = 0.98,
+    var FRICTION = 0.96,
 		LINE_LENGTH = 100;
     /*
 	 * Global variables
@@ -35,7 +35,8 @@
         e.preventDefault();
 
         if (!gameActive) {
-            mouseIsDown = detectClick(e);
+            var click = getMousePos(canvas, e);
+            mouseIsDown = detectClick(click);
         }
     }
     function mouseUp(e) {
@@ -62,12 +63,27 @@
         rad = rad || 360;
         return rad * Math.PI / 180;
     }
+    function getX(event) {
+        if (~event.type.indexOf("touch")) {
+            return event.targetTouches[0].pageX;
+        } else {
+            return event.layerX;
+        }
+    }
+
+    function getY(event) {
+        if (~event.type.indexOf("touch")) {
+            return event.targetTouches[0].pageY - headerHeight;
+        } else {
+            return event.layerY;
+        }
+    }
     // Mouse
     function getMousePos(canvas, evt) {
         var rect = canvas.getBoundingClientRect();
         return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
+            x: getX(evt) - rect.left,
+            y: getY(evt) - rect.top
         };
     }
     //Load images and execute a function after loading
@@ -127,9 +143,8 @@
     /*
 	 * Main functions
 	 */
-    function detectClick(e) {
-        var click = getMousePos(canvas, e),
-            clickObject = new Otbo.vector(click.x, click.y);
+    function detectClick(click) {
+        var clickObject = new Otbo.vector(click.x, click.y);
 
         for (var i = balls.length; i--;) {
             var ball = balls[i];
