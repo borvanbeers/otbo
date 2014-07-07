@@ -28,13 +28,14 @@
 
     var baseWidth = canvas.width * 0.15,
         middleWidth = canvas.width / 2,
-        middleHeight = canvas.height / 2;
+        middleHeight = canvas.height / 2,
+        scale = baseWidth * 0.80;
 
     //Mouse/Touch events
     function mouseDown(event) {        
 
         if (!gameActive) {
-            var click = getMousePos(canvas, event);
+            var click = getMousePos(event);
             mouseIsDown = detectClick(click);
         }
         event.preventDefault();
@@ -48,7 +49,7 @@
         event.preventDefault();
     }
     function mouseMove(event) {
-        mouseCurrent = getMousePos(canvas, event);
+        mouseCurrent = getMousePos(event);
         event.preventDefault();
     }
     canvas.addEventListener('mousedown', mouseDown, false);
@@ -65,26 +66,17 @@
         rad = rad || 360;
         return rad * Math.PI / 180;
     }
-    function getX(event) {
-        if (~event.type.indexOf("touch")) {
-            return event.targetTouches[0].pageX;
-        } else {
-            return event.layerX;
-        }
-    }
-
-    function getY(event) {
-        if (~event.type.indexOf("touch")) {
-            return event.targetTouches[0].pageY;
-        } else {
-            return event.layerY;
-        }
-    }
     // Mouse
-    function getMousePos(canvas, evt) {
+    function getMousePos(event) {
+        if (~event.type.indexOf("touch")) {
+            return {
+                x: event.targetTouches[0].pageX,
+                y: event.targetTouches[0].pageY
+            }
+        }
         return {
-            x: getX(evt),
-            y: getY(evt)
+            x: event.layerX,
+            y: event.layerY
         };
     }
     //Load images and execute a function after loading
@@ -411,7 +403,10 @@
     }
 
     function initGame() {
-        var beginBalls = [30, 30, 60, 60, 90, 90];
+        var big = scale / 2,
+            small = big / 3,
+            medium = big - small,
+            beginBalls = [big, big, medium, medium, small, small];
         state = 0;
 
         for (var i = 0, l = numberOfPlayers; i < l; i++) {
@@ -442,7 +437,7 @@
 
     function nextMove(){
         var size = players[currentPlayer].balls.shift(),
-            fixedWidth = 100;
+            fixedWidth = baseWidth / 2;
         var ball = new Otbo.ball(
             currentPlayer & 1 ? fixedWidth : canvas.width - fixedWidth,
             canvas.height / 2,
