@@ -460,7 +460,7 @@
             });
         }, false);
 
-        makeImages(['spider.png','circle.png','spiral.jpg'], function (i) {
+        makeImages(['spider.png','spiral.jpg'], function (i) {
             Otbo.img = i;
         });
     }
