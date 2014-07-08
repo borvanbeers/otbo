@@ -3,26 +3,24 @@
     var instance,
         canvas,
         ctx,
+        states,
         pause = true,
-        update,
-        draw;
+        update;
 
     // constructor
-    function gameState(c) {
+    function gameState(c, s) {
+        canvas = c;
+        ctx = c.getContext('2d');
+        states = s || {};
+
         if (instance) {
             return instance;
         }
         instance = this;
-
-        canvas = c;
-        ctx = c.getContext('2d');
     }
-    gameState.prototype.start = function (state, options) {
-        if (options) {
-            if (options.update) update = options.update;
-            if (options.draw) draw = options.draw;
-        }
+    gameState.prototype.start = function (state) {
         this.state = state;
+        update = states[this.state];
 
         if (pause) {
             pause = false;
@@ -32,13 +30,15 @@
     gameState.prototype.stop = function () {
         pause = true;
     }
+    gameState.prototype.isState = function (state) {
+        return this.state === state
+    }
 
     function loop() {
 
         if (!pause) {
             clear();
             update && update();
-            draw && draw();
             queue();
         }
     }
@@ -46,7 +46,7 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     function queue() {
-         g.requestAnimationFrame(loop);
+        g.requestAnimationFrame(loop);
     }
 
     return gameState;
