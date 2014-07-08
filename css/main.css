@@ -5,3 +5,68 @@ html,body{
 	padding: 0;
 	overflow: hidden;
 }
+
+.container{
+    position: relative;
+}
+
+.backdrop{
+    position: absolute;
+    background: #000;
+    opacity: 0.7;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+
+.menu {
+    opacity: 1;
+    position: absolute;
+    left: 30%;
+    top: 20%;
+    width: 40%;
+    height: 60%;
+}
+
+.menu > button{    
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.btn {
+	box-shadow:inset -18px 1px 0px -30px #ffffff;
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #f9f9f9), color-stop(1, #e9e9e9) );
+	background:-moz-linear-gradient( center top, #f9f9f9 5%, #e9e9e9 100% );
+	background-color:#f9f9f9;
+	-moz-border-radius-topleft:37px;
+	border-top-left-radius:37px;
+	-moz-border-radius-topright:0px;
+	border-top-right-radius:0px;
+	-moz-border-radius-bottomright:37px;
+	border-bottom-right-radius:37px;
+	-moz-border-radius-bottomleft:0px;
+	border-bottom-left-radius:0px;
+	text-indent:0;
+	border:1px solid #dcdcdc;
+	display:inline-block;
+	color:#666666;
+	font-family:Verdana;
+	font-size:15px;
+	font-weight:bold;
+	font-style:normal;
+	height:65px;
+	line-height:65px;
+	width:131px;
+	text-decoration:none;
+	text-align:center;
+}
+.btn:hover {
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #e9e9e9), color-stop(1, #f9f9f9) );
+	background:-moz-linear-gradient( center top, #e9e9e9 5%, #f9f9f9 100% );
+	background-color:#e9e9e9;
+}
+.btn:active {
+	position:relative;
+}

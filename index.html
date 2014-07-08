@@ -1,17 +1,27 @@
 <!DOCTYPE HTML>
 <html>
-  <head>
-  	<title>OTBO</title>
-	<link href="css/main.css" rel="stylesheet" type="text/css">
-  </head>
-  <body>
-    <canvas id="otbo"></canvas>
-	<script type="text/javascript">
-		window.Otbo = window.Otbo || {};
-	</script>
-	<script src="js/vector.js"></script>
-	<script src="js/ball.js"></script>
-	<script src="js/main.js"></script>
-	<script src="js/imageLoader.js"></script>
-  </body>
-</html>  
+<head>
+    <title>OTBO</title>
+    <link href="css/main.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <div class="container">
+        <canvas id="otbo"></canvas>
+        <div class="backdrop">
+            <div class="menu">
+                <button id="player2" class="btn">2 Player</button>
+                <button id="how2play" class="btn">How to Play</button>
+                <button id="credits" class="btn">Credits</button>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        window.Otbo = window.Otbo || {};
+    </script>
+    <script src="js/gameState.js"></script>
+    <script src="js/vector.js"></script>
+    <script src="js/ball.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/imageLoader.js"></script>
+</body>
+</html>

@@ -12,7 +12,9 @@
 	 */
     var canvas = document.getElementById('otbo'),
 		ctx = canvas.getContext('2d'),
-        state = 0,
+        states = {menu:'menu',game:'game'},
+        gameState = new Otbo.gameState(canvas),
+        menu = document.getElementsByClassName('backdrop')[0],
         gameActive = false,
 		mouseIsDown = false,
 		mouseStart,
@@ -33,9 +35,10 @@
 
     //Mouse/Touch events
     function mouseDown(event) {        
+        var click = getMousePos(event);
+        mouseCurrent = click;
 
-        if (!gameActive) {
-            var click = getMousePos(event);
+        if (!gameActive) {            
             mouseIsDown = detectClick(click);
         }
         event.preventDefault();
@@ -171,6 +174,11 @@
 
         ctx.drawImage(players[0].img, baseWidth, 0, middleWidth - baseWidth, canvas.height);
         ctx.drawImage(players[1].img, middleWidth, 0, middleWidth - baseWidth, canvas.height);
+
+        ctx.beginPath();
+        ctx.rect(middleWidth-1, 0, 2, canvas.height);
+        ctx.fillStyle = '#f00';
+        ctx.fill();
     }
 
     function drawHud() {
@@ -208,11 +216,11 @@
         for (var i = balls.length; i--;) {
             var ball = balls[i];
 
-            if (state === 0) {
+            if (gameState.state === states.game) {
                 ctx.beginPath();
                 ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
                 ctx.shadowColor = '#f00';
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = ball.radius / 10;
                 ctx.fill();
                 ctx.shadowBlur = 0;
             }
@@ -224,10 +232,8 @@
             ctx.closePath();
             ctx.clip();
             ctx.drawImage(players[ball.owner].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
-            ctx.closePath();
-            
+            ctx.closePath();            
             ctx.restore();
-
         }
 
         //Draw mouse line
@@ -287,7 +293,7 @@
     function updateBallPos(ball) {
         ball.lastGoodPosition = ball.position; // save the balls last good position.            
         ball.position = ball.position.add((ball.velocity.multiply(8))); // add the balls (velocity * 6) to position.
-        if(state === 0)ball.velocity = ball.velocity.multiply(FRICTION); // add friction to decelerate balls
+        if (gameState.state === states.game) ball.velocity = ball.velocity.multiply(FRICTION); // add friction to decelerate balls
     }
 
     function checkWallCollision(ball) {
@@ -334,18 +340,6 @@
         ball2.velocity = ball2ScalarNormalVector.add(ball2scalarNormalAfter_vector);
     }
 
-    /*
-	 * Gameloop
-	 */
-    function loop() {
-        clear();
-        update();
-        draw();
-        queue();
-    }
-    function clear() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
     function update() {
         var moving = 0;
 
@@ -382,9 +376,6 @@
         drawObjects();
         drawHud();
     }
-    function queue() {
-        window.requestAnimationFrame(loop);
-    }
 
     /*
 	 * Initialize
@@ -401,33 +392,44 @@
             balls.push(ball);
         }
     }
-
-    function initGame() {
+    //mousecurrent touchstart
+    function initGame(number) {
         var big = scale / 2,
             small = big / 3,
             medium = big - small,
             beginBalls = [big, big, medium, medium, small, small];
-        state = 0;
+
+        clearInterval(timer);
+        menu.style.display = 'none';
+
+        gameActive = false;
+        mouseStart = null;
+        balls = [];
+        players = [];
+        numberOfPlayers = number;
+        currentPlayer = Math.floor(Math.random() * numberOfPlayers);
 
         for (var i = 0, l = numberOfPlayers; i < l; i++) {
             players.push({
                 score: 0,
-                img: i & 1 ? Otbo.img.CrazyWolf : Otbo.img.spiral,
+                img: i & 1 ? Otbo.img.spider : Otbo.img.spiral,
                 balls: shuffleArray(beginBalls.slice(0))
             });
         }        
-        currentPlayer = Math.floor(Math.random() * numberOfPlayers);
         nextMove();
     }
 
+    var timer;
     function gameOver() {
-        console.log('game');
-        state = 1;
         var c = 0,
             max = 50;
 
-        var t = setInterval(function () {
-            if (c === max) clearInterval(t);
+        menu.style.display = 'block';
+        gameState.start(states.menu);
+        gameActive = true;
+
+        timer = setInterval(function () {
+            if (c === max) clearInterval(timer);
 
             var ball = new Otbo.ball(20, 20, 10, 1, 1, c & 1);
             balls.push(ball);
@@ -449,14 +451,17 @@
     }
 
     function init() {
-        makeImages(['CrazyWolf.jpg','spiral.jpg'], function (i) {
+
+        document.getElementById('player2').addEventListener('click', function () {
+            initGame(2);
+            gameState.start(states.game,{
+                update: update,
+                draw: draw
+            });
+        }, false);
+
+        makeImages(['spider.png','circle.png','spiral.jpg'], function (i) {
             Otbo.img = i;
-            /* /
-            createRandomBalls();
-            /* */
-            initGame();
-            /* */
-            loop();
         });
     }
     init();
