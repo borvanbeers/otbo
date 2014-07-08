@@ -1,34 +1,34 @@
 Otbo.ball = (function () {
     // constructor
-    function ball(x,y,radiusMass,velX,velY,owner) { 
+    function ball(x, y, radiusMass, velX, velY, owner) {
         this.position = new Otbo.vector();
         this.position.setX(x);
-		this.position.setY(y);
+        this.position.setY(y);
 
         this.velocity = new Otbo.vector();
         this.velocity.setX(velX);
-		this.velocity.setY(velY);
+        this.velocity.setY(velY);
 
         this.setRadius(radiusMass);
         this.setMass(radiusMass);
         //this.setColor(color);
         this.owner = owner;
-		this.lifeTime = 0;
+        this.lifeTime = 0;
     }
 
-    ball.prototype.setX = function (x) { this.position.setX(x);}
-    ball.prototype.setY = function (y) { this.position.setY(y);}
+    ball.prototype.setX = function (x) { this.position.setX(x); }
+    ball.prototype.setY = function (y) { this.position.setY(y); }
 
-    ball.prototype.getX = function () {return this.position.getX();}
-    ball.prototype.getY = function () {return this.position.getY();}
+    ball.prototype.getX = function () { return this.position.getX(); }
+    ball.prototype.getY = function () { return this.position.getY(); }
 
-    ball.prototype.setRadius = function (radius) { this.radius = radius;}
-    ball.prototype.getRadius = function () { return this.radius;}
+    ball.prototype.setRadius = function (radius) { this.radius = radius; }
+    ball.prototype.getRadius = function () { return this.radius; }
 
-    ball.prototype.setMass = function (mass) { this.mass = mass;}
-    ball.prototype.getMass = function () { return this.mass;}
+    ball.prototype.setMass = function (mass) { this.mass = mass; }
+    ball.prototype.getMass = function () { return this.mass; }
     //ball.prototype.setColor = function (color) { this.color = color;}
     //ball.prototype.getColor = function () { return this.color;}
-	ball.prototype.life = function(life){ return this.lifeTime+=life;}
+    ball.prototype.life = function (life) { return this.lifeTime += life; }
     return ball;
 })();

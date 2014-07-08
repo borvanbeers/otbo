@@ -6,14 +6,13 @@
 	 * Constants
 	 */
     var FRICTION = 0.96,
-		LINE_LENGTH = 100;
+		MAX_FORCE = 300;
     /*
 	 * Global variables
 	 */
     var canvas = document.getElementById('otbo'),
 		ctx = canvas.getContext('2d'),
-        states = {menu:'menu',game:'game'},
-        gameState = new Otbo.gameState(canvas),
+        gameState = new Otbo.gameState(canvas, { menu: update, game: update }),
         menu = document.getElementsByClassName('backdrop')[0],
         gameActive = false,
 		mouseIsDown = false,
@@ -34,12 +33,12 @@
         scale = baseWidth * 0.80;
 
     //Mouse/Touch events
-    function mouseDown(event) {        
+    function mouseDown(event) {
         var click = getMousePos(event);
         mouseCurrent = click;
 
-        if (!gameActive) {            
-            mouseIsDown = detectClick(click);
+        if (!gameActive) {
+            mouseIsDown = pointInCircle(mouseStart, click);
         }
         event.preventDefault();
     }
@@ -115,6 +114,11 @@
         if (n > max) return max;
         return n;
     }
+    //Gets a color from blue to red. param value from 0 to 1
+    function getColor(value) {
+        var hue = ((1 - value) * 200).toString(10);
+        return ["hsl(", hue, ",100%,50%)"].join("");
+    }
 
     //Randomize array element order in-place. Using Fisher-Yates shuffle algorithm.
     function shuffleArray(array) {
@@ -139,29 +143,26 @@
     /*
 	 * Main functions
 	 */
-    function detectClick(click) {
-        var clickObject = new Otbo.vector(click.x, click.y);
 
-        for (var i = balls.length; i--;) {
-            var ball = balls[i];
-
-            if (pointInCircle(ball, clickObject)) {
-                mouseStart = ball;
-                return true;
-            };
-        }
-        return false;
+    function clampAngle(midX, midY, x, y) {
+        var disX = (x - midX),
+            disY = (y - midY),
+            angleInRadians = Math.atan2(disY, disX),
+            maxX = Math.cos(angleInRadians) * MAX_FORCE,
+            maxY = Math.sin(angleInRadians) * MAX_FORCE,
+            forceX = (maxX > 0 ? clamp(disX, -maxX, maxX) : clamp(disX, maxX, -maxX)),
+            forceY = (maxY > 0 ? clamp(disY, -maxY, maxY) : clamp(disY, maxY, -maxY)),
+            realX = midX + forceX,
+            realY = midY + forceY;
+        return new Otbo.vector(realX, realY);
     }
-
     function plotMouseForce() {
-        var speed = 60,
-            xDistance = (mouseCurrent.x - mouseStart.position.getX()), // subtract the X distances from each other.
-            yDistance = (mouseCurrent.y - mouseStart.position.getY()); // subtract the Y distances from each other.
-
-        console.log(pythagoras(xDistance, yDistance));//get distance
-
-        mouseStart.velocity.setX(xDistance / speed);
-        mouseStart.velocity.setY(yDistance / speed);
+        var speed = 20,
+            x = mouseStart.position.getX(),
+            y = mouseStart.position.getY(),
+            angle = clampAngle(x, y, mouseCurrent.x, mouseCurrent.y);
+        mouseStart.velocity.setX((angle.x - x) / speed);
+        mouseStart.velocity.setY((angle.y - y) / speed);
         //reset the mouseStart pointer
         mouseStart = null;
     }
@@ -176,7 +177,7 @@
         ctx.drawImage(players[1].img, middleWidth, 0, middleWidth - baseWidth, canvas.height);
 
         ctx.beginPath();
-        ctx.rect(middleWidth-1, 0, 2, canvas.height);
+        ctx.rect(middleWidth - 1, 0, 2, canvas.height);
         ctx.fillStyle = '#f00';
         ctx.fill();
     }
@@ -189,21 +190,21 @@
                 fixedWidth = 20,
                 x = i & 1 ? fixedWidth : canvas.width - fixedWidth;
 
-            for (var o = 0, j = player.balls.length; j--;) {                
+            for (var o = 0, j = player.balls.length; j--;) {
                 var ballSize = player.balls[j] / 10;
                 ctx.beginPath();
                 ctx.arc(x, fixedWidth + fixedWidth * o, ballSize, 0, 2 * Math.PI, false);
-                
+
                 ctx.fill();
                 o++;
-            }            
+            }
         }
 
         ctx.font = "120px Verdana";
         ctx.shadowColor = '#fff';
         ctx.shadowBlur = 20;
 
-        for (var i = 0, l = players.length; i < l; i++) {            
+        for (var i = 0, l = players.length; i < l; i++) {
             var x = i & 1 ? 10 : canvas.width - 90;
             ctx.fillText(players[i].score, x, canvas.height - 20);
         }
@@ -216,7 +217,7 @@
         for (var i = balls.length; i--;) {
             var ball = balls[i];
 
-            if (gameState.state === states.game) {
+            if (gameState.isState('game')) {
                 ctx.beginPath();
                 ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
                 ctx.shadowColor = '#f00';
@@ -232,7 +233,7 @@
             ctx.closePath();
             ctx.clip();
             ctx.drawImage(players[ball.owner].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
-            ctx.closePath();            
+            ctx.closePath();
             ctx.restore();
         }
 
@@ -240,18 +241,25 @@
         if (mouseIsDown) {
             ctx.beginPath();
             var x = mouseStart.position.getX(),
-                y = mouseStart.position.getY();
+                y = mouseStart.position.getY(),
+                to = clampAngle(x, y, mouseCurrent.x, mouseCurrent.y),
+                dist = pythagoras(x - to.x, y - to.y),
+                percent = dist / MAX_FORCE,
+                drop = 60,
+                angle = Math.atan2(to.y - y, to.x - x);
             ctx.moveTo(x, y);
-            ctx.lineTo(mouseCurrent.x, mouseCurrent.y);
+            ctx.bezierCurveTo(x, y, to.x - drop * Math.cos(angle - Math.PI / 6), to.y - drop * Math.sin(angle - Math.PI / 6), to.x, to.y);
+            ctx.bezierCurveTo(to.x, to.y, to.x - drop * Math.cos(angle + Math.PI / 6), to.y - drop * Math.sin(angle + Math.PI / 6), x, y);
+            ctx.closePath();
             ctx.lineWidth = 5;
             ctx.lineCap = 'round';
-            ctx.strokeStyle = 'white';
-            ctx.stroke();
+            ctx.fillStyle = getColor(percent);
+            ctx.fill();
         }
     }
 
     function nextPlayer() {
-        function getNext() {            
+        function getNext() {
             if (players.length === count) return false;
             count++;
             currentPlayer = ++currentPlayer % numberOfPlayers;
@@ -293,7 +301,7 @@
     function updateBallPos(ball) {
         ball.lastGoodPosition = ball.position; // save the balls last good position.            
         ball.position = ball.position.add((ball.velocity.multiply(8))); // add the balls (velocity * 6) to position.
-        if (gameState.state === states.game) ball.velocity = ball.velocity.multiply(FRICTION); // add friction to decelerate balls
+        if (gameState.isState('game')) ball.velocity = ball.velocity.multiply(FRICTION); // add friction to decelerate balls
     }
 
     function checkWallCollision(ball) {
@@ -346,7 +354,7 @@
         for (var i = balls.length; i--;) {
             var iBall = balls[i],
                 mag = iBall.velocity.magnitude();
-            
+
             updateBallPos(iBall);
             checkWallCollision(iBall);
 
@@ -370,6 +378,8 @@
             nextMove();
             gameActive = false;
         }
+
+        draw();
     }
     function draw() {
         drawBackground();
@@ -415,8 +425,9 @@
                 img: i & 1 ? Otbo.img.spider : Otbo.img.spiral,
                 balls: shuffleArray(beginBalls.slice(0))
             });
-        }        
+        }
         nextMove();
+        gameState.start('game');
     }
 
     var timer;
@@ -425,7 +436,7 @@
             max = 50;
 
         menu.style.display = 'block';
-        gameState.start(states.menu);
+        gameState.start('menu');
         gameActive = true;
 
         timer = setInterval(function () {
@@ -437,7 +448,7 @@
         }, 200);
     }
 
-    function nextMove(){
+    function nextMove() {
         var size = players[currentPlayer].balls.shift(),
             fixedWidth = baseWidth / 2;
         var ball = new Otbo.ball(
@@ -448,19 +459,16 @@
             currentPlayer
         );
         balls.push(ball);
+        mouseStart = ball;
     }
 
     function init() {
 
         document.getElementById('player2').addEventListener('click', function () {
             initGame(2);
-            gameState.start(states.game,{
-                update: update,
-                draw: draw
-            });
         }, false);
 
-        makeImages(['spider.png','spiral.jpg'], function (i) {
+        makeImages(['spider.png', 'spiral.jpg'], function (i) {
             Otbo.img = i;
         });
     }
