@@ -1,25 +1,26 @@
 /*
  * Anonymous function to induce scope.
  */
-(function (global) {
+(function (g) {
     /*
 	 * Constants
 	 */
-    var FRICTION = 0.96,
-		MAX_FORCE = 300;
+    var FRICTION = 0.96;
     /*
 	 * Global variables
 	 */
     var canvas = document.getElementById('otbo'),
 		ctx = canvas.getContext('2d'),
-        gameState = new Otbo.gameState(canvas, { menu: update, game: update }),
+        gameState = new Otbo.gameState(canvas, { menu: update, game: update, divide: dividing }),
         menu = document.getElementsByClassName('backdrop')[0],
         gameActive = false,
 		mouseIsDown = false,
 		mouseStart,
 		mouseCurrent,
 		balls = [],
+        dividedBalls,
 		players = [],
+        winner = -1,
         numberOfPlayers = 2,
 		currentPlayer = 0;
 
@@ -30,7 +31,8 @@
     var baseWidth = canvas.width * 0.15,
         middleWidth = canvas.width / 2,
         middleHeight = canvas.height / 2,
-        scale = baseWidth * 0.80;
+        scale = baseWidth * 0.80,
+        MAX_FORCE = scale * 2;
 
     //Mouse/Touch events
     function mouseDown(event) {
@@ -83,20 +85,19 @@
     }
     //Load images and execute a function after loading
     function makeImages(images, callback) {
-        var result = {};
-        var loadCount = 0;
-        var imagesToLoad = images.length;
+        var result = {},
+            loads = 0,
+            keys = Object.keys(images),
+            num = keys.length;
 
-        for (var i = imagesToLoad; i--;) {
-            var name = images[i].split(".")[0],
-				img = new Image();
+        for (var i = num; i--;) {
+            var key = keys[i],
+                img = new Image();
             img.onload = function () {
-                if (++loadCount >= imagesToLoad) {
-                    callback(result);
-                }
+                if (++loads >= num) callback(result);
             };
-            img.src = images[i];
-            result[name] = img;
+            img.src = images[key];
+            result[key] = img;
         }
     }
     //Point in circle detection
@@ -170,36 +171,42 @@
     function drawBackground() {
         ctx.beginPath();
         ctx.rect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#999';
+        ctx.fillStyle = '#aaa';
         ctx.fill();
 
-        ctx.drawImage(players[0].img, baseWidth, 0, middleWidth - baseWidth, canvas.height);
-        ctx.drawImage(players[1].img, middleWidth, 0, middleWidth - baseWidth, canvas.height);
+        ctx.beginPath();
+        ctx.rect(baseWidth, 0, middleWidth - baseWidth, canvas.height);
+        ctx.fillStyle = players[0].color;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.rect(middleWidth, 0, middleWidth - baseWidth, canvas.height);
+        ctx.fillStyle = players[1].color;
+        ctx.fill();
 
         ctx.beginPath();
         ctx.rect(middleWidth - 1, 0, 2, canvas.height);
-        ctx.fillStyle = '#f00';
+        ctx.fillStyle = '#679100';
         ctx.fill();
     }
 
     function drawHud() {
-        ctx.fillStyle = '#fff';
-
+        
         for (var i = 0, l = players.length; i < l; i++) {
             var player = players[i],
                 fixedWidth = 20,
                 x = i & 1 ? fixedWidth : canvas.width - fixedWidth;
+            ctx.fillStyle = player.color;
 
             for (var o = 0, j = player.balls.length; j--;) {
                 var ballSize = player.balls[j] / 10;
                 ctx.beginPath();
                 ctx.arc(x, fixedWidth + fixedWidth * o, ballSize, 0, 2 * Math.PI, false);
-
                 ctx.fill();
                 o++;
             }
         }
 
+        ctx.fillStyle = '#fff';
         ctx.font = "120px Verdana";
         ctx.shadowColor = '#fff';
         ctx.shadowBlur = 20;
@@ -217,13 +224,12 @@
         for (var i = balls.length; i--;) {
             var ball = balls[i];
 
-            if (gameState.isState('game')) {
+            if (!gameState.isState('menu')) {
                 ctx.beginPath();
                 ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
-                ctx.shadowColor = '#f00';
-                ctx.shadowBlur = ball.radius / 10;
-                ctx.fill();
-                ctx.shadowBlur = 0;
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = players[ball.owner].color;
+                ctx.stroke();
             }
             ctx.save();
             ctx.translate(ball.position.x, ball.position.y);
@@ -245,14 +251,12 @@
                 to = clampAngle(x, y, mouseCurrent.x, mouseCurrent.y),
                 dist = pythagoras(x - to.x, y - to.y),
                 percent = dist / MAX_FORCE,
-                drop = 60,
+                drop = dist / 2,
                 angle = Math.atan2(to.y - y, to.x - x);
             ctx.moveTo(x, y);
             ctx.bezierCurveTo(x, y, to.x - drop * Math.cos(angle - Math.PI / 6), to.y - drop * Math.sin(angle - Math.PI / 6), to.x, to.y);
             ctx.bezierCurveTo(to.x, to.y, to.x - drop * Math.cos(angle + Math.PI / 6), to.y - drop * Math.sin(angle + Math.PI / 6), x, y);
             ctx.closePath();
-            ctx.lineWidth = 5;
-            ctx.lineCap = 'round';
             ctx.fillStyle = getColor(percent);
             ctx.fill();
         }
@@ -275,20 +279,34 @@
     }
 
     function divideBalls() {
-        var scores = [0, 0];//playerscores
+        var scores = [0, 0],
+            divided = [];//playerscores
 
         for (var i = balls.length; i--;) {
-            var ball = balls[i];
+            var ball = balls[i],
+                odd = ball.owner & 1;
 
             if (ball.position.x < baseWidth) {
-                players[1].balls.push(ball.radius);
+                if (odd === 0) {
+                    divided.push({
+                        from: ball.owner,
+                        to: 1,
+                        ball: ball
+                    });
+                }
                 balls.splice(i, 1);
             } else if (ball.position.x > canvas.width - baseWidth) {
-                players[0].balls.push(ball.radius);
+                if (odd === 1) {
+                    divided.push({
+                        from: ball.owner,
+                        to: 0,
+                        ball: ball
+                    });
+                }
                 balls.splice(i, 1);
-            } else if (ball.owner === 0 && ball.position.x > baseWidth && ball.position.x < middleWidth) {
+            } else if (!odd && ball.position.x > baseWidth && ball.position.x < middleWidth) {
                 scores[0] += 1;
-            } else if (ball.owner === 1 && ball.position.x < canvas.width - baseWidth && ball.position.x > middleWidth) {
+            } else if (odd && ball.position.x < canvas.width - baseWidth && ball.position.x > middleWidth) {
                 scores[1] += 1;
             }
         }
@@ -296,6 +314,7 @@
         for (var i = 0, l = players.length; i < l; i++) {
             players[i].score = scores[i];
         }
+        return divided;
     }
 
     function updateBallPos(ball) {
@@ -373,14 +392,65 @@
         }
 
         if (gameActive && moving === 0) {
-            divideBalls();
-            if (!nextPlayer()) gameOver();
+            dividedBalls = divideBalls();
+            if (!nextPlayer()) {
+                gameOver();
+            } else {
+                gameState.start('divide');
+            }
+        }
+        draw();      
+    }
+
+    var fadePct = 0;
+    function dividing() {
+        if (!dividedBalls.length || fadePct > 100) {
+            fadePct = 0;
+
+            for (var i = dividedBalls.length; i--;) {
+                var dvdBall = dividedBalls[i];
+                players[dvdBall.to].balls.push(dvdBall.ball.radius);
+            }
+
             nextMove();
+            gameState.start('game');
             gameActive = false;
+            draw();
+            return;
+        }
+        draw();
+
+        for (var i = dividedBalls.length; i--;) {
+            var dvdBall = dividedBalls[i];
+            drawFade(dvdBall.ball, dvdBall.to, fadePct / 100);
+            drawFade(dvdBall.ball, dvdBall.from, (1 - fadePct / 100));
         }
 
-        draw();
+        fadePct++;
     }
+
+    function drawFade(ball, num, opacity) {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+
+        ctx.beginPath();
+        ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = players[ball.owner].color;
+        ctx.stroke();
+        ctx.closePath();
+
+        ctx.translate(ball.position.x, ball.position.y);
+        ctx.rotate(ball.life(ball.velocity.getX() * 16) * (Math.PI / 180));
+        ctx.beginPath();
+        ctx.arc(0, 0, ball.radius, 0, 2 * Math.PI, false);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(players[num].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
+        ctx.closePath();
+        ctx.restore();
+    }
+
     function draw() {
         drawBackground();
         drawObjects();
@@ -422,8 +492,9 @@
         for (var i = 0, l = numberOfPlayers; i < l; i++) {
             players.push({
                 score: 0,
-                img: i & 1 ? Otbo.img.spider : Otbo.img.spiral,
-                balls: shuffleArray(beginBalls.slice(0))
+                img: i & 1 ? Otbo.img.p1 : Otbo.img.p2,
+                balls: shuffleArray(beginBalls.slice(0)),
+                color: i & 1 ? '#990800': '#370667'//'#FB0F03' : '#5D0EA9'
             });
         }
         nextMove();
@@ -439,10 +510,18 @@
         gameState.start('menu');
         gameActive = true;
 
+        //Find winner
+        for (var score = 0, i = players.length; i--;) {
+            if (players[i].score > score) {
+                score = players[i].score;
+                winner = i;
+            }
+        }
+
         timer = setInterval(function () {
             if (c === max) clearInterval(timer);
 
-            var ball = new Otbo.ball(20, 20, 10, 1, 1, c & 1);
+            var ball = new Otbo.ball(20, 20, 10, 1, 1, winner);
             balls.push(ball);
             c++;
         }, 200);
@@ -468,7 +547,10 @@
             initGame(2);
         }, false);
 
-        makeImages(['spider.png', 'spiral.jpg'], function (i) {
+        makeImages({
+            p1: 'img/craycray.jpg', 
+            p2: 'img/spiral.jpg'
+        }, function (i) {
             Otbo.img = i;
         });
     }
