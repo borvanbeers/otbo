@@ -29,6 +29,8 @@
                   canvas.width = playerImage.width;   // image width = player field width
                   canvas.height = playerImage.height; // image height = player field height
                   ctx.drawImage(playerImage,0,0);     // ctx.drawImage(img, player field.x, player field.y);
+                  var str = canvas.toDataURL();
+                  localStorage.setItem('image',str)
               }
               playerImage.src = event.target.result;
           }
