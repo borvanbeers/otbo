@@ -16,12 +16,22 @@
     <div class="container">
         <!-- The canvas -->
         <canvas id="otbo"></canvas>
-        <div class="backdrop">
+        <div id="menu" class="backdrop">
             <div class="menu">
                 <button id="player2" class="btn">2 Player</button>
+                <button id="player1" class="btn">1 Player (AI)</button>
                 <button id="how2play" class="btn">How to Play</button>
-                <button id="credits" class="btn">Credits</button>
+                <button id="customization" class="btn">Customization</button>
             </div>
+        </div>
+        <div id="customize" class="backdrop" style="display:none">
+            <h1>Player 1</h1>
+            <input type="file" id="player1image" />
+            <canvas id="player1canvas"></canvas>
+            <h1>Player 2</h1>
+            <input type="file" id="player2image" />
+            <canvas id="player2canvas"></canvas>
+            <button id="customizeclose">Close</button>
         </div>
     </div>
     <!-- Scripts -->
