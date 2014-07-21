@@ -1,0 +1,49 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+  	<title>flatJS</title>
+    <style>
+    canvas
+    {
+    border:5px solid red;
+    }
+    </style>
+  </head>
+  <body>
+
+    Click to choose your image:
+    <input type="file" id="imageLoader" name="imageLoader"/>
+    
+    <script type="text/javascript">
+
+      var imageLoader = document.getElementById('imageLoader');
+      imageLoader.addEventListener('change', handleImage, false);
+
+
+
+      function handleImage(e){
+          var reader = new FileReader();
+          reader.onload = function(event){
+              var playerImage = new Image();
+              playerImage.onload = function(){
+                  canvas.width = playerImage.width;   // image width = player field width
+                  canvas.height = playerImage.height; // image height = player field height
+                  ctx.drawImage(playerImage,0,0);     // ctx.drawImage(img, player field.x, player field.y);
+              }
+              playerImage.src = event.target.result;
+          }
+          reader.readAsDataURL(e.target.files[0]);     
+      }
+
+    </script>
+
+
+    <canvas id="myCanvas"></canvas>
+	<script type="text/javascript">
+    var canvas = document.getElementById('myCanvas');
+    canvas.width = 750;
+    canvas.height = 500;
+    var ctx = canvas.getContext('2d');
+	</script>
+  </body>
+</html>  
