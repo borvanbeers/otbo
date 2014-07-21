@@ -11,7 +11,7 @@
 	 */
     var canvas = d.getElementById('otbo'),
 		ctx = canvas.getContext('2d'),
-        gameState = new Otbo.gameState(canvas, { menu: function () { }, game: update, divide: dividing }),
+        gameState = new Otbo.gameState(canvas, { menu: null , game: update, divide: dividing }),
         menu = d.getElementById('menu'),
         customize = d.getElementById('customize'),
         gameActive = false,
@@ -410,9 +410,8 @@
             }
             
             if (nextPlayer()) {
-                nextMove();
-                gameActive = false;
                 gameState.start('game');
+                nextMove();
             } else {
                 gameOver();
             }
@@ -484,7 +483,6 @@
         clearInterval(timer);
         menu.style.display = 'none';
 
-        gameActive = false;
         mouseStart = null;
         balls = [];
         players = [];
@@ -517,7 +515,7 @@
                 color: i & 1 ? '#990800' : '#370667'//'#FB0F03' : '#5D0EA9'
             };
 
-            if (i === 1 && number === 1) {
+            if (i === 0 && number === 1) {
                 player.isComputer = true;
             }
             players.push(player);
@@ -555,7 +553,8 @@
     }
 
     function nextMove() {
-        var size = players[currentPlayer].balls.shift(),
+        var player = players[currentPlayer],
+            size = player.balls.shift(),
             fixedWidth = baseWidth / 2;
         var ball = new Otbo.ball(
             currentPlayer & 1 ? fixedWidth : canvas.width - fixedWidth,
@@ -566,6 +565,18 @@
         );
         balls.push(ball);
         mouseStart = ball;
+
+        if (player.isComputer) {
+            var force = MAX_FORCE / 2;
+            mouseCurrent = {
+                x: ball.getX() + Math.floor(Math.random() * force) - force,
+                y: ball.getY() + Math.floor(Math.random() * force) - force
+            };
+            plotMouseForce();
+            gameActive = true;
+            return;
+        }
+        gameActive = false;
     }
 
     function handleImage(e, canvas, key) {
