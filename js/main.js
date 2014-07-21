@@ -20,7 +20,7 @@
 		balls = [],
         dividedBalls,
 		players = [],
-        winner = -1,
+        winner = 0,
         numberOfPlayers = 2,
 		currentPlayer = 0;
 
@@ -250,7 +250,7 @@
                 y = mouseStart.position.getY(),
                 to = clampAngle(x, y, mouseCurrent.x, mouseCurrent.y),
                 dist = pythagoras(x - to.x, y - to.y),
-                percent = dist / MAX_FORCE,
+                percent = Math.round(dist / MAX_FORCE * 10) / 10,
                 drop = dist / 2,
                 angle = Math.atan2(to.y - y, to.x - x);
             ctx.moveTo(x, y);
@@ -391,13 +391,9 @@
             }
         }
 
-        if (gameActive && moving === 0) {
+        if (moving === 0 && gameState.isState('game') && gameActive) {
             dividedBalls = divideBalls();
-            if (!nextPlayer()) {
-                gameOver();
-            } else {
-                gameState.start('divide');
-            }
+            gameState.start('divide');            
         }
         draw();      
     }
@@ -411,10 +407,15 @@
                 var dvdBall = dividedBalls[i];
                 players[dvdBall.to].balls.push(dvdBall.ball.radius);
             }
+            
+            if (nextPlayer()) {
+                nextMove();
+                gameActive = false;
+                gameState.start('game');
+            } else {
+                gameOver();
+            }
 
-            nextMove();
-            gameState.start('game');
-            gameActive = false;
             draw();
             return;
         }
