@@ -11,7 +11,7 @@ Otbo is a HTML5/Javascript game.
 > HTML game for any browser/phone
 
 
-[Demo](https://rawgit.com/henkdevries007/otbo/master/index.html)
+[Demo](http://www.a1rpun.com/games/otbo/index.html)
 -
 
 Version
