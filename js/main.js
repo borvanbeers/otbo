@@ -1,7 +1,7 @@
 /*
  * Anonymous function to induce scope.
  */
-(function (g) {
+(function (g, d) {
     /*
 	 * Constants
 	 */
@@ -9,10 +9,11 @@
     /*
 	 * Global variables
 	 */
-    var canvas = document.getElementById('otbo'),
+    var canvas = d.getElementById('otbo'),
 		ctx = canvas.getContext('2d'),
-        gameState = new Otbo.gameState(canvas, { menu: update, game: update, divide: dividing }),
-        menu = document.getElementsByClassName('backdrop')[0],
+        gameState = new Otbo.gameState(canvas, { menu: null , game: update, divide: dividing }),
+        menu = d.getElementById('menu'),
+        customize = d.getElementById('customize'),
         gameActive = false,
 		mouseIsDown = false,
 		mouseStart,
@@ -409,9 +410,8 @@
             }
             
             if (nextPlayer()) {
-                nextMove();
-                gameActive = false;
                 gameState.start('game');
+                nextMove();
             } else {
                 gameOver();
             }
@@ -483,20 +483,42 @@
         clearInterval(timer);
         menu.style.display = 'none';
 
-        gameActive = false;
         mouseStart = null;
         balls = [];
         players = [];
-        numberOfPlayers = number;
+        numberOfPlayers = clamp(number, 2, 4);
         currentPlayer = Math.floor(Math.random() * numberOfPlayers);
 
+        var p1, p2,
+            p1image = localStorage.getItem('player1'),
+            p2image = localStorage.getItem('player2');
+
+        if (p1image) {
+            p1 = new Image();
+            p1.src = p1image;
+        } else {
+            p1 = Otbo.img.p1;
+        }
+        
+        if (p2image) {
+            p2 = new Image();
+            p2.src = p2image;
+        } else {
+            p2 = Otbo.img.p2;
+        }
+
         for (var i = 0, l = numberOfPlayers; i < l; i++) {
-            players.push({
+            var player = {
                 score: 0,
-                img: i & 1 ? Otbo.img.p1 : Otbo.img.p2,
+                img: i & 1 ? p1 : p2,
                 balls: shuffleArray(beginBalls.slice(0)),
-                color: i & 1 ? '#990800': '#370667'//'#FB0F03' : '#5D0EA9'
-            });
+                color: i & 1 ? '#990800' : '#370667'//'#FB0F03' : '#5D0EA9'
+            };
+
+            if (i === 0 && number === 1) {
+                player.isComputer = true;
+            }
+            players.push(player);
         }
         nextMove();
         gameState.start('game');
@@ -519,6 +541,7 @@
             }
         }
 
+        /* /
         timer = setInterval(function () {
             if (c === max) clearInterval(timer);
 
@@ -526,10 +549,12 @@
             balls.push(ball);
             c++;
         }, 200);
+        /* */
     }
 
     function nextMove() {
-        var size = players[currentPlayer].balls.shift(),
+        var player = players[currentPlayer],
+            size = player.balls.shift(),
             fixedWidth = baseWidth / 2;
         var ball = new Otbo.ball(
             currentPlayer & 1 ? fixedWidth : canvas.width - fixedWidth,
@@ -540,20 +565,75 @@
         );
         balls.push(ball);
         mouseStart = ball;
+
+        if (player.isComputer) {
+            var force = MAX_FORCE / 2;
+            mouseCurrent = {
+                x: ball.getX() + Math.floor(Math.random() * force) - force,
+                y: ball.getY() + Math.floor(Math.random() * force) - force
+            };
+            plotMouseForce();
+            gameActive = true;
+            return;
+        }
+        gameActive = false;
+    }
+
+    function handleImage(e, canvas, key) {
+        var reader = new FileReader(),
+            context = canvas.getContext('2d');
+
+        reader.onload = function (event) {
+            var playerImage = new Image();
+            playerImage.onload = function () {
+                canvas.width = playerImage.width;   // image width = player field width
+                canvas.height = playerImage.height; // image height = player field height
+                context.drawImage(playerImage, 0, 0);     // ctx.drawImage(img, player field.x, player field.y);
+                localStorage.setItem(key, canvas.toDataURL());
+            }
+            playerImage.src = event.target.result;
+        }
+        reader.readAsDataURL(e.target.files[0]);
     }
 
     function init() {
+        var player1image = d.getElementById('player1image'),
+            player1canvas = d.getElementById('player1canvas'),
+            player2image = d.getElementById('player2image'),
+            player2canvas = d.getElementById('player2canvas');
+        //canvas.width = 750;
+        //canvas.height = 500;
+        
+        player1image.addEventListener('change', function (e) {
+            handleImage(e, player1canvas, 'player1');
+        }, false);
 
-        document.getElementById('player2').addEventListener('click', function () {
+        player2image.addEventListener('change', function (e) {
+            handleImage(e, player2canvas, 'player2');
+        }, false);
+
+        d.getElementById('player2').addEventListener('click', function () {
             initGame(2);
         }, false);
 
-        makeImages({
-            p1: 'img/craycray.jpg', 
-            p2: 'img/spiral.jpg'
-        }, function (i) {
-            Otbo.img = i;
-        });
+        d.getElementById('player1').addEventListener('click', function () {
+            initGame(1);
+        }, false);
+
+        d.getElementById('customization').addEventListener('click', function () {
+            customize.style.display = 'block';
+        }, false);
+
+        d.getElementById('customizeclose').addEventListener('click', function () {
+            customize.style.display = 'none';
+        }, false);
     }
-    init();
-}(window));
+
+    makeImages({
+        p1: 'img/craycray.jpg',
+        p2: 'img/spiral.jpg'
+    }, function (i) {
+        Otbo.img = i;
+        init();
+    });    
+}(window, document));
