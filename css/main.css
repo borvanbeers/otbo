@@ -19,6 +19,10 @@ html,body{
     height: 100%;
 }
 
+.area{
+    float: left;
+    width: 50%;
+}
 
 .menu {
     position: absolute;

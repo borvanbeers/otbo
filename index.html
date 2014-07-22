@@ -1,6 +1,6 @@
 <!DOCTYPE HTML>
 <html>
-<head>  
+<head>
     <title>OTBO</title>
     <!-- Meta tags -->
     <meta charset="utf-8">
@@ -24,13 +24,19 @@
                 <button id="customization" class="btn">Customization</button>
             </div>
         </div>
-        <div id="customize" class="backdrop" style="display:none">
-            <h1>Player 1</h1>
-            <input type="file" id="player1image" />
-            <canvas id="player1canvas"></canvas>
-            <h1>Player 2</h1>
-            <input type="file" id="player2image" />
-            <canvas id="player2canvas"></canvas>
+        <div id="customize" class="backdrop" style="display: none">
+            <div class="area">
+                <h1>Player 1</h1>
+                <input type="color" id="player1color" /><br />
+                <input type="file" id="player1image" /><br />
+                <canvas id="player1canvas"></canvas>
+            </div>
+            <div class="area">
+                <h1>Player 2</h1>
+                <input type="color" id="player2color" /><br />
+                <input type="file" id="player2image" /><br />
+                <canvas id="player2canvas"></canvas><br />                
+            </div>
             <button id="customizeclose">Close</button>
         </div>
     </div>

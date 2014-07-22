@@ -23,7 +23,8 @@
 		players = [],
         winner = 0,
         numberOfPlayers = 2,
-		currentPlayer = 0;
+		currentPlayer = 0,
+        options = {};
 
     //Set width/height to 100&
     canvas.width = window.innerWidth;
@@ -101,6 +102,29 @@
             result[key] = img;
         }
     }
+    //
+    function makeAudio(sounds, callback) {
+        var result = {},
+            loads = 0,
+            keys = Object.keys(sounds),
+            num = keys.length;
+
+        for (var i = num; i--;) {
+            var key = keys[i],
+                snd = new Audio();
+            snd.oncanplaythrough = function () {
+                if (++loads >= num) callback(result);
+            };
+            snd.src = sounds[key];
+            result[key] = snd;
+        }
+    }
+    //
+    function playSound(snd) {
+        var sound = Otbo.sound[snd];
+        sound.currentTime = 0;
+        sound.play();
+    }
     //Point in circle detection
     function pointInCircle(circle, point) {
         return (Math.sqrt(Math.pow(circle.position.x - point.x, 2) +
@@ -121,7 +145,6 @@
         var hue = ((1 - value) * 200).toString(10);
         return ["hsl(", hue, ",100%,50%)"].join("");
     }
-
     //Randomize array element order in-place. Using Fisher-Yates shuffle algorithm.
     function shuffleArray(array) {
         for (var i = array.length - 1; i > 0; i--) {
@@ -131,6 +154,10 @@
             array[j] = temp;
         }
         return array;
+    }
+    //
+    function validateHEX(hex){
+        return /^#[0-9A-F]{3}(?:[0-9A-F]{3})?$/i.test(hex);
     }
 
     /*
@@ -145,7 +172,6 @@
     /*
 	 * Main functions
 	 */
-
     function clampAngle(midX, midY, x, y) {
         var disX = (x - midX),
             disY = (y - midY),
@@ -288,7 +314,7 @@
                 odd = ball.owner & 1;
 
             if (ball.position.x < baseWidth) {
-                if (odd === 0) {
+                if (ball.owner !== currentPlayer || odd === 0) {
                     divided.push({
                         from: ball.owner,
                         to: 1,
@@ -297,7 +323,7 @@
                 }
                 balls.splice(i, 1);
             } else if (ball.position.x > canvas.width - baseWidth) {
-                if (odd === 1) {
+                if (ball.owner  !== currentPlayer || odd === 1) {
                     divided.push({
                         from: ball.owner,
                         to: 0,
@@ -328,11 +354,13 @@
         if (ball.getX() + (ball.getRadius()) >= canvas.width || ball.getX() - (ball.getRadius()) <= 0) {
             ball.velocity.setX(-ball.velocity.getX()); // if collided with a wall on x Axis, reflect Velocity.X.
             ball.position = ball.lastGoodPosition; // reset ball to the last good position (Avoid objects getting stuck in each other).
+            playSound('bounce');
         }
 
         if (ball.getY() - (ball.getRadius()) <= 0 || ball.getY() + (ball.getRadius()) >= canvas.height) { // check for y collisions.
             ball.velocity.setY(-ball.velocity.getY()); // if collided with a wall on y Axis, reflect Velocity.Y.
             ball.position = ball.lastGoodPosition;
+            playSound('bounce');
         }
     }
 
@@ -383,6 +411,7 @@
                 if (iBall != jBall) {
                     if (checkBallCollision(iBall, jBall)) {
                         ballCollisionResponce(iBall, jBall);
+                        playSound('bounce');
                     }
                 }
             }
@@ -489,30 +518,12 @@
         numberOfPlayers = clamp(number, 2, 4);
         currentPlayer = Math.floor(Math.random() * numberOfPlayers);
 
-        var p1, p2,
-            p1image = localStorage.getItem('player1'),
-            p2image = localStorage.getItem('player2');
-
-        if (p1image) {
-            p1 = new Image();
-            p1.src = p1image;
-        } else {
-            p1 = Otbo.img.p1;
-        }
-        
-        if (p2image) {
-            p2 = new Image();
-            p2.src = p2image;
-        } else {
-            p2 = Otbo.img.p2;
-        }
-
         for (var i = 0, l = numberOfPlayers; i < l; i++) {
             var player = {
                 score: 0,
-                img: i & 1 ? p1 : p2,
+                img: i & 1 ? options.p1i : options.p2i,
                 balls: shuffleArray(beginBalls.slice(0)),
-                color: i & 1 ? '#990800' : '#370667'//'#FB0F03' : '#5D0EA9'
+                color: i & 1 ? options.p1c : options.p2c
             };
 
             if (i === 0 && number === 1) {
@@ -569,8 +580,8 @@
         if (player.isComputer) {
             var force = MAX_FORCE / 2;
             mouseCurrent = {
-                x: ball.getX() + Math.floor(Math.random() * force) - force,
-                y: ball.getY() + Math.floor(Math.random() * force) - force
+                x: ball.getX() - Math.floor(Math.random() * force),
+                y: ball.getY() + Math.floor(Math.random() * MAX_FORCE) - force
             };
             plotMouseForce();
             gameActive = true;
@@ -596,20 +607,25 @@
         reader.readAsDataURL(e.target.files[0]);
     }
 
-    function init() {
+    function initElements() {
         var player1image = d.getElementById('player1image'),
             player1canvas = d.getElementById('player1canvas'),
+            player1color = d.getElementById('player1color'),
             player2image = d.getElementById('player2image'),
-            player2canvas = d.getElementById('player2canvas');
+            player2canvas = d.getElementById('player2canvas'),
+            player2color = d.getElementById('player2color');
         //canvas.width = 750;
         //canvas.height = 500;
         
+        player1color.value = options.p1c;
+        player2color.value = options.p2c;
+
         player1image.addEventListener('change', function (e) {
-            handleImage(e, player1canvas, 'player1');
+            handleImage(e, player1canvas, 'player1image');
         }, false);
 
         player2image.addEventListener('change', function (e) {
-            handleImage(e, player2canvas, 'player2');
+            handleImage(e, player2canvas, 'player2image');
         }, false);
 
         d.getElementById('player2').addEventListener('click', function () {
@@ -627,13 +643,78 @@
         d.getElementById('customizeclose').addEventListener('click', function () {
             customize.style.display = 'none';
         }, false);
+
+        player1color.addEventListener('change', function (e) {
+            var val = this.value;
+            if (validateHEX(val)) {
+                options.p1c = val;
+                localStorage.setItem('player1color', val);
+            }
+        }, false);
+
+        player2color.addEventListener('change', function (e) {
+            var val = this.value;
+            if (validateHEX(val)) {
+                options.p2c = val;
+                localStorage.setItem('player2color', val);
+            }
+        }, false);
+        //
     }
 
-    makeImages({
-        p1: 'img/craycray.jpg',
-        p2: 'img/spiral.jpg'
-    }, function (i) {
-        Otbo.img = i;
-        init();
-    });    
+    function initImages(i){
+        var p1image = localStorage.getItem('player1image'),
+            p2image = localStorage.getItem('player2image');
+
+        if (p1image) {
+            options.p1i = new Image();
+            options.p1i.src = p1image;
+        } else {
+            options.p1i = i.p1;
+        }
+
+        if (p2image) {
+            options.p2i = new Image();
+            options.p2i.src = p2image;
+        } else {
+            options.p2i = i.p2;
+        }
+    }
+
+    function initColors(){
+        var p1color = localStorage.getItem('player1color'),
+            p2color = localStorage.getItem('player2color');
+
+        if (validateHEX(p1color)) {
+            options.p1c = p1color;
+        } else {
+            options.p1c = '#990800';//'#FB0F03'
+        }
+
+        if (validateHEX(p2color)) {
+            options.p2c = p2color;
+        } else {
+            options.p2c = '#370667';// '#5D0EA9'
+        }
+    }
+
+    function init() {
+        initColors();
+
+        makeImages({
+            p1: 'img/craycray.jpg',
+            p2: 'img/spiral.jpg'
+        }, function (i) {
+            initImages(i);            
+            initElements();
+        });
+
+        makeAudio({
+            bounce: 'sound/bat.mp3',
+            bgmusic: 'sound/Nameless-the_Hackers.mp3'
+        }, function (a) {
+            Otbo.sound = a;
+        });
+    }
+    init();
 }(window, document));
