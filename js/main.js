@@ -38,25 +38,27 @@
 
     //Mouse/Touch events
     function mouseDown(event) {
-        var click = getMousePos(event);
-        mouseCurrent = click;
+        if (!players[currentPlayer].isComputer) {
+            var click = getMousePos(event);
+            mouseCurrent = click;
 
-        if (!gameActive) {
-            mouseIsDown = pointInCircle(mouseStart, click);
+            if (!gameActive) {
+                mouseIsDown = pointInCircle(mouseStart, click);
+            }
         }
         event.preventDefault();
     }
     function mouseUp(event) {
-        if (mouseIsDown) {
+        if (mouseIsDown && !players[currentPlayer].isComputer) {
             plotMouseForce();
-            mouseIsDown = false;
-            gameActive = true;
         }
         event.preventDefault();
     }
     function mouseMove(event) {
-        mouseCurrent = getMousePos(event);
-        event.preventDefault();
+        if (!players[currentPlayer].isComputer) {
+            mouseCurrent = getMousePos(event);
+            event.preventDefault();
+        }
     }
     canvas.addEventListener('mousedown', mouseDown, false);
     canvas.addEventListener('mouseup', mouseUp, false);
@@ -193,6 +195,8 @@
         mouseStart.velocity.setY((angle.y - y) / speed);
         //reset the mouseStart pointer
         mouseStart = null;
+        mouseIsDown = false;
+        gameActive = true;
     }
 
     function drawBackground() {
@@ -220,7 +224,7 @@
         
         for (var i = 0, l = players.length; i < l; i++) {
             var player = players[i],
-                fixedWidth = 20,
+                fixedWidth = scale / 10,
                 x = i & 1 ? fixedWidth : canvas.width - fixedWidth;
             ctx.fillStyle = player.color;
 
@@ -251,13 +255,11 @@
         for (var i = balls.length; i--;) {
             var ball = balls[i];
 
-            if (!gameState.isState('menu')) {
-                ctx.beginPath();
-                ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
-                ctx.lineWidth = 5;
-                ctx.strokeStyle = players[ball.owner].color;
-                ctx.stroke();
-            }
+            ctx.beginPath();
+            ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = players[ball.owner].color;
+            ctx.stroke();
             ctx.save();
             ctx.translate(ball.position.x, ball.position.y);
             ctx.rotate(ball.life(ball.velocity.getX() * 16) * (Math.PI / 180));
@@ -420,12 +422,12 @@
                 moving++;
             }
         }
+        draw();
 
         if (moving === 0 && gameState.isState('game') && gameActive) {
             dividedBalls = divideBalls();
-            gameState.start('divide');            
+            gameState.start('divide');
         }
-        draw();      
     }
 
     var fadePct = 0;
@@ -449,7 +451,6 @@
             return;
         }
         draw();
-
         for (var i = dividedBalls.length; i--;) {
             var dvdBall = dividedBalls[i];
             drawFade(dvdBall.ball, dvdBall.to, fadePct / 100);
@@ -539,11 +540,7 @@
     function gameOver() {
         var c = 0,
             max = 50;
-
-        menu.style.display = 'block';
-        gameState.start('menu');
-        gameActive = true;
-
+        
         //Find winner
         for (var score = 0, i = players.length; i--;) {
             if (players[i].score > score) {
@@ -552,6 +549,12 @@
             }
         }
 
+        gameActive = true;
+
+        setTimeout(function () {
+            menu.style.display = 'block';
+            gameState.start('menu');
+        }, 5000);        
         /* /
         timer = setInterval(function () {
             if (c === max) clearInterval(timer);
@@ -583,23 +586,27 @@
                 x: ball.getX() - Math.floor(Math.random() * force),
                 y: ball.getY() + Math.floor(Math.random() * MAX_FORCE) - force
             };
-            plotMouseForce();
-            gameActive = true;
-            return;
+            mouseIsDown = true;
+            setTimeout(function () {
+                plotMouseForce();
+            }, 1000);
         }
         gameActive = false;
     }
 
-    function handleImage(e, canvas, key) {
-        var reader = new FileReader(),
-            context = canvas.getContext('2d');
+    function drawImage(img, canvas) {
+        var context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
 
+    function handleImage(e, canvas, key) {
+        var reader = new FileReader();
         reader.onload = function (event) {
             var playerImage = new Image();
             playerImage.onload = function () {
-                canvas.width = playerImage.width;   // image width = player field width
-                canvas.height = playerImage.height; // image height = player field height
-                context.drawImage(playerImage, 0, 0);     // ctx.drawImage(img, player field.x, player field.y);
+                options[key] = playerImage;
+                drawImage(playerImage, canvas);
                 localStorage.setItem(key, canvas.toDataURL());
             }
             playerImage.src = event.target.result;
@@ -614,18 +621,23 @@
             player2image = d.getElementById('player2image'),
             player2canvas = d.getElementById('player2canvas'),
             player2color = d.getElementById('player2color');
-        //canvas.width = 750;
-        //canvas.height = 500;
-        
+
+        player1canvas.width = scale;
+        player1canvas.height = scale;
+        player2canvas.width = scale;
+        player2canvas.height = scale;
+
         player1color.value = options.p1c;
+        player1color.style.backgroundColor = options.p1c;
         player2color.value = options.p2c;
+        player2color.style.backgroundColor = options.p2c;
 
         player1image.addEventListener('change', function (e) {
-            handleImage(e, player1canvas, 'player1image');
+            handleImage(e, player1canvas, 'p1i');
         }, false);
 
         player2image.addEventListener('change', function (e) {
-            handleImage(e, player2canvas, 'player2image');
+            handleImage(e, player2canvas, 'p2i');
         }, false);
 
         d.getElementById('player2').addEventListener('click', function () {
@@ -638,6 +650,8 @@
 
         d.getElementById('customization').addEventListener('click', function () {
             customize.style.display = 'block';
+            drawImage(options.p1i, player1canvas);
+            drawImage(options.p2i, player2canvas);
         }, false);
 
         d.getElementById('customizeclose').addEventListener('click', function () {
@@ -649,6 +663,7 @@
             if (validateHEX(val)) {
                 options.p1c = val;
                 localStorage.setItem('player1color', val);
+                this.style.backgroundColor = val;
             }
         }, false);
 
@@ -657,14 +672,15 @@
             if (validateHEX(val)) {
                 options.p2c = val;
                 localStorage.setItem('player2color', val);
+                this.style.backgroundColor = val;
             }
         }, false);
         //
     }
 
     function initImages(i){
-        var p1image = localStorage.getItem('player1image'),
-            p2image = localStorage.getItem('player2image');
+        var p1image = localStorage.getItem('p1i'),
+            p2image = localStorage.getItem('p2i');
 
         if (p1image) {
             options.p1i = new Image();
