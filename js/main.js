@@ -11,7 +11,7 @@
 	 */
     var canvas = d.getElementById('otbo'),
 		ctx = canvas.getContext('2d'),
-        gameState = new Otbo.gameState(canvas, { menu: null , game: update, divide: dividing }),
+        gameState = new Otbo.gameState(canvas, { menu: null, game: update, divide: dividing }),
         menu = d.getElementById('menu'),
         customize = d.getElementById('customize'),
         gameActive = false,
@@ -21,7 +21,7 @@
 		balls = [],
         dividedBalls,
 		players = [],
-        winner = 0,
+        winner = -1,
         numberOfPlayers = 2,
 		currentPlayer = 0,
         options = {};
@@ -158,7 +158,7 @@
         return array;
     }
     //
-    function validateHEX(hex){
+    function validateHEX(hex) {
         return /^#[0-9A-F]{3}(?:[0-9A-F]{3})?$/i.test(hex);
     }
     //
@@ -209,8 +209,12 @@
 
     function drawBackground() {
         ctx.beginPath();
-        ctx.rect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#aaa';
+        ctx.rect(canvas.width - baseWidth, 0, baseWidth, canvas.height);
+        ctx.fillStyle = players[0].contrast;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.rect(0, 0, baseWidth, canvas.height);
+        ctx.fillStyle = players[1].contrast;
         ctx.fill();
 
         ctx.beginPath();
@@ -253,7 +257,7 @@
     }
 
     function drawHud() {
-        
+
         for (var i = 0, l = players.length; i < l; i++) {
             var player = players[i],
                 fixedWidth = scale / 10,
@@ -268,7 +272,7 @@
                 o++;
             }
         }
-        ctx.font = "120px Verdana";        
+        ctx.font = "120px Verdana";
         ctx.shadowBlur = 20;
 
         for (var i = 0, l = players.length; i < l; i++) {
@@ -341,13 +345,25 @@
                         to: 1,
                         ball: ball
                     });
+                } else {
+                    divided.push({
+                        from: o,
+                        to: null,
+                        ball: ball
+                    });
                 }
                 balls.splice(i, 1);
             } else if (ball.position.x > canvas.width - baseWidth) {
-                if (o  !== currentPlayer || o === 1) {
+                if (o !== currentPlayer || o === 1) {
                     divided.push({
                         from: o,
                         to: 0,
+                        ball: ball
+                    });
+                } else {
+                    divided.push({
+                        from: o,
+                        to: null,
                         ball: ball
                     });
                 }
@@ -451,24 +467,28 @@
 
             for (var i = dividedBalls.length; i--;) {
                 var dvdBall = dividedBalls[i];
-                players[dvdBall.to].balls.push(dvdBall.ball.radius);
+                if (dvdBall.to !== null) { players[dvdBall.to].balls.push(dvdBall.ball.radius); }
             }
-            
+
             if (nextPlayer()) {
                 gameState.start('game');
                 nextMove();
+                draw();
             } else {
+                draw();
                 gameOver();
             }
-
-            draw();
             return;
         }
         draw();
         for (var i = dividedBalls.length; i--;) {
             var dvdBall = dividedBalls[i];
-            drawFade(dvdBall.ball, dvdBall.to, fadePct / 100);
-            drawFade(dvdBall.ball, dvdBall.from, (1 - fadePct / 100));
+            if (dvdBall.from !== dvdBall.to) {
+                if (dvdBall.to !== null) { drawFade(dvdBall.ball, dvdBall.to, fadePct / 100); }
+                drawFade(dvdBall.ball, dvdBall.from, (1 - fadePct / 100));
+            } else {
+                drawFade(dvdBall.ball, dvdBall.from, 1);
+            }
         }
 
         fadePct++;
@@ -528,14 +548,14 @@
         for (var i = 0, l = numberOfPlayers; i < l; i++) {
             var p = 'p' + (i + 1),
                 player = {
-                score: 0,
-                img: options[p + 'i'],
-                balls: shuffleArray(beginBalls.slice(0)),
-                color: options[p + 'c'],
-                contrast: options[p + 'cc']
-            };
+                    score: 0,
+                    img: options[p + 'i'],
+                    balls: shuffleArray(beginBalls.slice(0)),
+                    color: options[p + 'c'],
+                    contrast: options[p + 'cc']
+                };
 
-            if (i === 0 && number === 1) {
+            if (i === 1 && number === 1) {
                 player.isComputer = true;
             }
             players.push(player);
@@ -546,24 +566,44 @@
 
     var timer;
     function gameOver() {
-        var c = 0,
-            max = 50;
-        
+        gameActive = true;
+        gameState.stop();
+
         //Find winner
+        winner = -1;
         for (var score = 0, i = players.length; i--;) {
             if (players[i].score > score) {
                 score = players[i].score;
                 winner = i;
             }
         }
+        winner++;
 
-        gameActive = true;
+        var txt = winner ? 'Winner: player ' + winner : 'Draw',
+            fontSize = 100;
+        ctx.font = fontSize + "px Verdana";
 
+        var textWidth = ctx.measureText(txt).width,
+            x = canvas.width / 2 - textWidth / 2,
+            y = canvas.height / 2,
+            gradient = ctx.createLinearGradient(x, y, textWidth, 0);
+        gradient.addColorStop(0, 'red');
+        gradient.addColorStop(1 / 6, 'orange');
+        gradient.addColorStop(2 / 6, 'yellow');
+        gradient.addColorStop(3 / 6, 'green');
+        gradient.addColorStop(4 / 6, 'blue');
+        gradient.addColorStop(5 / 6, 'indigo');
+        gradient.addColorStop(1, 'violet');
+        ctx.fillStyle = gradient;
+        ctx.fillText(txt, x, y);
+        /* */
         setTimeout(function () {
             menu.style.display = 'block';
             gameState.start('menu');
-        }, 5000);        
+        }, 5000);
         /* /
+        var c = 0,
+            max = 50;
         timer = setInterval(function () {
             if (c === max) clearInterval(timer);
 
@@ -671,7 +711,7 @@
             if (validateHEX(val)) {
                 options.p1c = val;
                 options.p1cc = getContrastColor(val);
-                localStorage.setItem('player1color', val);
+                localStorage.setItem('p1c', val);
                 this.style.backgroundColor = val;
             }
         }, false);
@@ -681,14 +721,14 @@
             if (validateHEX(val)) {
                 options.p2c = val;
                 options.p2cc = getContrastColor(val);
-                localStorage.setItem('player2color', val);
+                localStorage.setItem('p2c', val);
                 this.style.backgroundColor = val;
             }
         }, false);
         //
     }
 
-    function initImages(i){
+    function initImages(i) {
         var p1image = localStorage.getItem('p1i'),
             p2image = localStorage.getItem('p2i');
 
@@ -707,9 +747,9 @@
         }
     }
 
-    function initColors(){
-        var p1color = localStorage.getItem('player1color'),
-            p2color = localStorage.getItem('player2color');
+    function initColors() {
+        var p1color = localStorage.getItem('p1c'),
+            p2color = localStorage.getItem('p2c');
 
         if (validateHEX(p1color)) {
             options.p1c = p1color;
@@ -722,8 +762,8 @@
         } else {
             options.p2c = '#370667';// '#5D0EA9'
         }
-        options.p1cc = getContrastColor(p1color);
-        options.p2cc = getContrastColor(p2color);
+        options.p1cc = getContrastColor(options.p1c);
+        options.p2cc = getContrastColor(options.p2c);
     }
 
     function init() {
@@ -733,7 +773,7 @@
             p1: 'img/craycray.jpg',
             p2: 'img/spiral.jpg'
         }, function (i) {
-            initImages(i);            
+            initImages(i);
             initElements();
         });
 
