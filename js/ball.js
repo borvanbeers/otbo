@@ -13,6 +13,7 @@ Otbo.ball = (function () {
         this.setMass(radiusMass);
         //this.setColor(color);
         this.owner = owner;
+        this.isScore = false;
         this.lifeTime = 0;
     }
 

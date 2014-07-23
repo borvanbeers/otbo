@@ -161,6 +161,14 @@
     function validateHEX(hex){
         return /^#[0-9A-F]{3}(?:[0-9A-F]{3})?$/i.test(hex);
     }
+    //
+    function getContrastColor(hex) {
+        var r = parseInt(hex.slice(1, 3), 16),
+            g = parseInt(hex.slice(3, 5), 16),
+            b = parseInt(hex.slice(5, 7), 16),
+            brightness = ((r * 299) + (g * 587) + (b * 114)) / 255000;
+        return brightness >= 0.5 ? '#000' : '#FFF';
+    }
 
     /*
 	 * Classes
@@ -220,6 +228,30 @@
         ctx.fill();
     }
 
+    function drawBalls() {
+        for (var i = balls.length; i--;) {
+            var ball = balls[i];
+
+            if (ball.isScore) {
+                ctx.beginPath();
+                ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
+                ctx.lineWidth = 10;
+                ctx.strokeStyle = players[ball.owner].contrast;
+                ctx.stroke();
+            }
+            ctx.save();
+            ctx.translate(ball.position.x, ball.position.y);
+            ctx.rotate(ball.life(ball.velocity.getX() * 16) * (Math.PI / 180));
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.radius, 0, 2 * Math.PI, false);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(players[ball.owner].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
+            ctx.closePath();
+            ctx.restore();
+        }
+    }
+
     function drawHud() {
         
         for (var i = 0, l = players.length; i < l; i++) {
@@ -236,41 +268,17 @@
                 o++;
             }
         }
-
-        ctx.fillStyle = '#fff';
-        ctx.font = "120px Verdana";
-        ctx.shadowColor = '#fff';
+        ctx.font = "120px Verdana";        
         ctx.shadowBlur = 20;
 
         for (var i = 0, l = players.length; i < l; i++) {
-            var x = i & 1 ? 10 : canvas.width - 90;
+            var player = players[i],
+                x = i & 1 ? 10 : canvas.width - 90;
+            ctx.fillStyle = player.color;
+            ctx.shadowColor = player.color;
             ctx.fillText(players[i].score, x, canvas.height - 20);
         }
         ctx.shadowBlur = 0;
-    }
-
-    function drawObjects() {
-
-        //Draw balls
-        for (var i = balls.length; i--;) {
-            var ball = balls[i];
-
-            ctx.beginPath();
-            ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
-            ctx.lineWidth = 5;
-            ctx.strokeStyle = players[ball.owner].color;
-            ctx.stroke();
-            ctx.save();
-            ctx.translate(ball.position.x, ball.position.y);
-            ctx.rotate(ball.life(ball.velocity.getX() * 16) * (Math.PI / 180));
-            ctx.beginPath();
-            ctx.arc(0, 0, ball.radius, 0, 2 * Math.PI, false);
-            ctx.closePath();
-            ctx.clip();
-            ctx.drawImage(players[ball.owner].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
-            ctx.closePath();
-            ctx.restore();
-        }
 
         //Draw mouse line
         if (mouseIsDown) {
@@ -307,41 +315,44 @@
         return getNext();
     }
 
+    function fastDivideBall(ball) {
+        var player = players[ball.owner];
+
+        if (ball.owner === 0 && ball.position.x > baseWidth && ball.position.x < middleWidth ||
+            ball.owner === 1 && ball.position.x < canvas.width - baseWidth && ball.position.x > middleWidth) {
+            player.score++;
+            ball.isScore = true;
+        } else {
+            ball.isScore = false;
+        }
+    }
+
     function divideBalls() {
-        var scores = [0, 0],
-            divided = [];//playerscores
+        var divided = [];
 
         for (var i = balls.length; i--;) {
             var ball = balls[i],
-                odd = ball.owner & 1;
+                o = ball.owner;
 
             if (ball.position.x < baseWidth) {
-                if (ball.owner !== currentPlayer || odd === 0) {
+                if (o !== currentPlayer || o === 0) {
                     divided.push({
-                        from: ball.owner,
+                        from: o,
                         to: 1,
                         ball: ball
                     });
                 }
                 balls.splice(i, 1);
             } else if (ball.position.x > canvas.width - baseWidth) {
-                if (ball.owner  !== currentPlayer || odd === 1) {
+                if (o  !== currentPlayer || o === 1) {
                     divided.push({
-                        from: ball.owner,
+                        from: o,
                         to: 0,
                         ball: ball
                     });
                 }
                 balls.splice(i, 1);
-            } else if (!odd && ball.position.x > baseWidth && ball.position.x < middleWidth) {
-                scores[0] += 1;
-            } else if (odd && ball.position.x < canvas.width - baseWidth && ball.position.x > middleWidth) {
-                scores[1] += 1;
             }
-        }
-
-        for (var i = 0, l = players.length; i < l; i++) {
-            players[i].score = scores[i];
         }
         return divided;
     }
@@ -400,6 +411,8 @@
 
     function update() {
         var moving = 0;
+        players[0].score = 0;
+        players[1].score = 0;
 
         for (var i = balls.length; i--;) {
             var iBall = balls[i],
@@ -417,6 +430,7 @@
                     }
                 }
             }
+            fastDivideBall(iBall);
 
             if (mag > 0.001) {
                 moving++;
@@ -463,14 +477,6 @@
     function drawFade(ball, num, opacity) {
         ctx.save();
         ctx.globalAlpha = opacity;
-
-        ctx.beginPath();
-        ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = players[ball.owner].color;
-        ctx.stroke();
-        ctx.closePath();
-
         ctx.translate(ball.position.x, ball.position.y);
         ctx.rotate(ball.life(ball.velocity.getX() * 16) * (Math.PI / 180));
         ctx.beginPath();
@@ -484,7 +490,7 @@
 
     function draw() {
         drawBackground();
-        drawObjects();
+        drawBalls();
         drawHud();
     }
 
@@ -520,11 +526,13 @@
         currentPlayer = Math.floor(Math.random() * numberOfPlayers);
 
         for (var i = 0, l = numberOfPlayers; i < l; i++) {
-            var player = {
+            var p = 'p' + (i + 1),
+                player = {
                 score: 0,
-                img: i & 1 ? options.p1i : options.p2i,
+                img: options[p + 'i'],
                 balls: shuffleArray(beginBalls.slice(0)),
-                color: i & 1 ? options.p1c : options.p2c
+                color: options[p + 'c'],
+                contrast: options[p + 'cc']
             };
 
             if (i === 0 && number === 1) {
@@ -662,6 +670,7 @@
             var val = this.value;
             if (validateHEX(val)) {
                 options.p1c = val;
+                options.p1cc = getContrastColor(val);
                 localStorage.setItem('player1color', val);
                 this.style.backgroundColor = val;
             }
@@ -671,6 +680,7 @@
             var val = this.value;
             if (validateHEX(val)) {
                 options.p2c = val;
+                options.p2cc = getContrastColor(val);
                 localStorage.setItem('player2color', val);
                 this.style.backgroundColor = val;
             }
@@ -712,6 +722,8 @@
         } else {
             options.p2c = '#370667';// '#5D0EA9'
         }
+        options.p1cc = getContrastColor(p1color);
+        options.p2cc = getContrastColor(p2color);
     }
 
     function init() {
