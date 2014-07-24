@@ -123,9 +123,11 @@
     }
     //
     function playSound(snd) {
-        var sound = Otbo.sound[snd];
-        sound.currentTime = 0;
-        sound.play();
+        if (Otbo.sound) {
+            var sound = Otbo.sound[snd];
+            sound.currentTime = 0;
+            sound.play();
+        }
     }
     //Point in circle detection
     function pointInCircle(circle, point) {
@@ -225,16 +227,42 @@
         ctx.rect(middleWidth, 0, middleWidth - baseWidth, canvas.height);
         ctx.fillStyle = players[1].color;
         ctx.fill();
-
-        ctx.beginPath();
-        ctx.rect(middleWidth - 1, 0, 2, canvas.height);
-        ctx.fillStyle = '#679100';
-        ctx.fill();
     }
 
     function drawBalls() {
         for (var i = balls.length; i--;) {
             var ball = balls[i];
+
+            if (ball.lastPositions && ball.lastPositions.length > 0) {
+                /* */
+                //line trail
+                ctx.beginPath();
+                ctx.moveTo(ball.position.x, ball.position.y);
+                for (var j = 0, l = ball.lastPositions.length; j < l; j++) {
+                    ctx.lineTo(ball.lastPositions[j].x, ball.lastPositions[j].y);
+                }
+                ctx.lineWidth = 50;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = players[ball.owner].contrast;
+                ctx.stroke();
+                /* /
+                // Shadow trail
+                for (var j = ball.lastPositions.length; j--;) {
+                    var lastPos = ball.lastPositions[j];                    
+                    ctx.save();
+                    ctx.globalAlpha = 0.5;
+                    ctx.translate(lastPos.x, lastPos.y);
+                    ctx.rotate((ball.life(0) - ball.velocity.getX() * 16 * (j ? j : 1)) * (Math.PI / 180));
+                    ctx.beginPath();
+                    ctx.arc(0, 0, ball.radius, 0, 2 * Math.PI, false);
+                    ctx.closePath();
+                    ctx.clip();
+                    ctx.drawImage(players[ball.owner].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
+                    ctx.closePath();
+                    ctx.restore();
+                }
+                /* */
+            }
 
             if (ball.isScore) {
                 ctx.beginPath();
@@ -374,7 +402,7 @@
     }
 
     function updateBallPos(ball) {
-        ball.lastGoodPosition = ball.position; // save the balls last good position.            
+        ball.setLastPosition(ball.position); // save the balls last good position.            
         ball.position = ball.position.add((ball.velocity.multiply(8))); // add the balls (velocity * 6) to position.
         if (gameState.isState('game')) ball.velocity = ball.velocity.multiply(FRICTION); // add friction to decelerate balls
     }
@@ -382,13 +410,13 @@
     function checkWallCollision(ball) {
         if (ball.getX() + (ball.getRadius()) >= canvas.width || ball.getX() - (ball.getRadius()) <= 0) {
             ball.velocity.setX(-ball.velocity.getX()); // if collided with a wall on x Axis, reflect Velocity.X.
-            ball.position = ball.lastGoodPosition; // reset ball to the last good position (Avoid objects getting stuck in each other).
+            ball.position = ball.getLastPosition(0); // reset ball to the last good position (Avoid objects getting stuck in each other).
             playSound('bounce');
         }
 
         if (ball.getY() - (ball.getRadius()) <= 0 || ball.getY() + (ball.getRadius()) >= canvas.height) { // check for y collisions.
             ball.velocity.setY(-ball.velocity.getY()); // if collided with a wall on y Axis, reflect Velocity.Y.
-            ball.position = ball.lastGoodPosition;
+            ball.position = ball.getLastPosition(0);
             playSound('bounce');
         }
     }
@@ -402,8 +430,8 @@
     }
 
     function ballCollisionResponce(ball1, ball2) {
-        ball1.position = ball1.lastGoodPosition;
-        ball2.position = ball2.lastGoodPosition;
+        ball1.position = ball1.getLastPosition(0);
+        ball2.position = ball2.getLastPosition(0);
         var xDistance = (ball2.getX() - ball1.getX());
         var yDistance = (ball2.getY() - ball1.getY());
         var normalVector = new Otbo.vector(xDistance, yDistance); // normalise this vector store the return value in normal vector.

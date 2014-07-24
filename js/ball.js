@@ -4,6 +4,8 @@ Otbo.ball = (function () {
         this.position = new Otbo.vector();
         this.position.setX(x);
         this.position.setY(y);
+        //Store the last 5 positions of the ball
+        this.lastPositions = [];
 
         this.velocity = new Otbo.vector();
         this.velocity.setX(velX);
@@ -28,8 +30,18 @@ Otbo.ball = (function () {
 
     ball.prototype.setMass = function (mass) { this.mass = mass; }
     ball.prototype.getMass = function () { return this.mass; }
-    //ball.prototype.setColor = function (color) { this.color = color;}
-    //ball.prototype.getColor = function () { return this.color;}
+
+    ball.prototype.setLastPosition = function (pos) {
+        if (this.lastPositions.length >= 5) {
+            this.lastPositions.unshift(pos);
+            this.lastPositions.pop();
+        } else {
+            this.lastPositions.push(pos);
+        }
+    }
+    ball.prototype.getLastPosition = function (idx) {
+        return this.lastPositions[idx];
+    }
     ball.prototype.life = function (life) { return this.lifeTime += life; }
     return ball;
 })();
