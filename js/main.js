@@ -15,6 +15,7 @@
         menu = d.getElementById('menu'),
         customize = d.getElementById('customize'),
         gameActive = false,
+        mouseMode = 1,
 		mouseIsDown = false,
 		mouseStart,
 		mouseCurrent,
@@ -43,20 +44,37 @@
             mouseCurrent = click;
 
             if (!gameActive) {
-                mouseIsDown = pointInCircle(mouseStart, click);
+
+                if (event.which === 3) {//right
+                    mouseMode = mouseMode === 1 ? 2 : 1;
+                } else {
+                    mouseIsDown = pointInCircle(mouseStart, click);
+                }
             }
         }
         event.preventDefault();
     }
     function mouseUp(event) {
         if (mouseIsDown && !players[currentPlayer].isComputer) {
-            plotMouseForce();
+
+            if(mouseMode === 1){
+                plotMouseForce();
+            }
         }
+        mouseIsDown = false;
         event.preventDefault();
     }
     function mouseMove(event) {
-        if (!players[currentPlayer].isComputer) {
+        if (mouseIsDown && !players[currentPlayer].isComputer) {
             mouseCurrent = getMousePos(event);
+
+            if (mouseMode === 2) {
+                var y = mouseCurrent.y;
+                if (y > mouseStart.radius + 10 &&
+                   y < canvas.height - mouseStart.radius - 10) {
+                    mouseStart.position.setY(y);
+                }
+            }
             event.preventDefault();
         }
     }
@@ -66,6 +84,8 @@
     canvas.addEventListener('touchstart', mouseDown, false);
     canvas.addEventListener('touchend', mouseUp, false);
     canvas.addEventListener('touchmove', mouseMove, false);
+    canvas.addEventListener('contextmenu', function () { event.preventDefault(); }, false);
+    
     /*
 	 * Helper methods
 	 */
@@ -234,7 +254,7 @@
             var ball = balls[i];
 
             if (ball.lastPositions && ball.lastPositions.length > 0) {
-                /* */
+                /* /
                 //line trail
                 ctx.beginPath();
                 ctx.moveTo(ball.position.x, ball.position.y);
@@ -313,7 +333,7 @@
         ctx.shadowBlur = 0;
 
         //Draw mouse line
-        if (mouseIsDown) {
+        if (mouseIsDown && mouseMode === 1) {
             ctx.beginPath();
             var x = mouseStart.position.getX(),
                 y = mouseStart.position.getY(),
@@ -647,14 +667,15 @@
             size = player.balls.shift(),
             fixedWidth = baseWidth / 2;
         var ball = new Otbo.ball(
-            currentPlayer & 1 ? fixedWidth : canvas.width - fixedWidth,
-            canvas.height / 2,
-            size,
-            0, 0,
-            currentPlayer
-        );
+                currentPlayer & 1 ? fixedWidth : canvas.width - fixedWidth,
+                canvas.height / 2,
+                size,
+                0, 0,
+                currentPlayer
+            );
         balls.push(ball);
         mouseStart = ball;
+        mouseMode = 1;
 
         if (player.isComputer) {
             var force = MAX_FORCE / 2;
