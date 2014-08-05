@@ -45,9 +45,11 @@
 
             if (!gameActive) {
 
-                if (event.which === 3) {//right
-                    mouseMode = mouseMode === 1 ? 2 : 1;
+                if (click.right) {
+                    mouseMode = 2;
+                    mouseIsDown = true;
                 } else {
+                    mouseMode = 1;
                     mouseIsDown = pointInCircle(mouseStart, click);
                 }
             }
@@ -99,12 +101,14 @@
         if (~event.type.indexOf("touch")) {
             return {
                 x: event.targetTouches[0].pageX,
-                y: event.targetTouches[0].pageY
+                y: event.targetTouches[0].pageY,
+                right: event.targetTouches.length > 1
             }
         }
         return {
             x: event.layerX,
-            y: event.layerY
+            y: event.layerY,
+            right: event.which === 3
         };
     }
     //Load images and execute a function after loading
@@ -478,26 +482,28 @@
         players[0].score = 0;
         players[1].score = 0;
 
-        for (var i = balls.length; i--;) {
-            var iBall = balls[i],
-                mag = iBall.velocity.magnitude();
+        if (gameActive) {
+            for (var i = balls.length; i--;) {
+                var iBall = balls[i],
+                    mag = iBall.velocity.magnitude();
 
-            updateBallPos(iBall);
-            checkWallCollision(iBall);
+                updateBallPos(iBall);
+                checkWallCollision(iBall);
 
-            for (var j = balls.length; j--;) {
-                var jBall = balls[j];
-                if (iBall != jBall) {
-                    if (checkBallCollision(iBall, jBall)) {
-                        ballCollisionResponce(iBall, jBall);
-                        playSound('bounce');
+                for (var j = balls.length; j--;) {
+                    var jBall = balls[j];
+                    if (iBall != jBall) {
+                        if (checkBallCollision(iBall, jBall)) {
+                            ballCollisionResponce(iBall, jBall);
+                            playSound('bounce');
+                        }
                     }
                 }
-            }
-            fastDivideBall(iBall);
+                fastDivideBall(iBall);
 
-            if (mag > 0.001) {
-                moving++;
+                if (mag > 0.001) {
+                    moving++;
+                }
             }
         }
         draw();
