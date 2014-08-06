@@ -21,6 +21,7 @@
 		mouseCurrent,
 		balls = [],
         dividedBalls,
+        pickups = [],
 		players = [],
         winner = -1,
         numberOfPlayers = 2,
@@ -40,17 +41,17 @@
     //Mouse/Touch events
     function mouseDown(event) {
         if (!players[currentPlayer].isComputer) {
-            var click = getMousePos(event);
-            mouseCurrent = click;
+            mouseMode = 0;
+            mouseCurrent = getMousePos(event);
 
             if (!gameActive) {
 
-                if (click.right) {
+                if (mouseCurrent.right) {
                     mouseMode = 2;
                     mouseIsDown = true;
                 } else {
                     mouseMode = 1;
-                    mouseIsDown = pointInCircle(mouseStart, click);
+                    mouseIsDown = pointInCircle(mouseStart, mouseCurrent);
                 }
             }
         }
@@ -64,6 +65,7 @@
             }
         }
         mouseIsDown = false;
+        mouseMode = 0;
         event.preventDefault();
     }
     function mouseMove(event) {
@@ -256,9 +258,8 @@
     function drawBalls() {
         for (var i = balls.length; i--;) {
             var ball = balls[i];
-
-            if (ball.lastPositions && ball.lastPositions.length > 0) {
-                /* /
+            /* /
+            if (ball.lastPositions && ball.lastPositions.length > 0) {                
                 //line trail
                 ctx.beginPath();
                 ctx.moveTo(ball.position.x, ball.position.y);
@@ -269,7 +270,6 @@
                 ctx.lineCap = 'round';
                 ctx.strokeStyle = players[ball.owner].contrast;
                 ctx.stroke();
-                /* /
                 // Shadow trail
                 for (var j = ball.lastPositions.length; j--;) {
                     var lastPos = ball.lastPositions[j];                    
@@ -284,10 +284,9 @@
                     ctx.drawImage(players[ball.owner].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
                     ctx.closePath();
                     ctx.restore();
-                }
-                /* */
+                }                
             }
-
+            /* */
             if (ball.isScore) {
                 ctx.beginPath();
                 ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
@@ -303,6 +302,11 @@
             ctx.closePath();
             ctx.clip();
             ctx.drawImage(players[ball.owner].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
+
+            if (ball.pickup) {
+                ctx.drawImage(options.biohazard, -32,-32, 64,64);
+            }
+
             ctx.closePath();
             ctx.restore();
         }
@@ -326,7 +330,16 @@
         }
         ctx.font = "120px Verdana";
         ctx.shadowBlur = 20;
-
+        //draw pickups
+        ctx.fillStyle = '#ff0000';
+        ctx.shadowColor = '#ff0000';
+        for (var i = 0, l = pickups.length; i < l; i++) {
+            var pickup = pickups[i];
+            ctx.beginPath();
+            ctx.arc(pickup.position.x, pickup.position.y, 5, 0, 2 * Math.PI, false);
+            ctx.fill();            
+        }
+        //draw scores
         for (var i = 0, l = players.length; i < l; i++) {
             var player = players[i],
                 x = i & 1 ? 10 : canvas.width - 90;
@@ -425,6 +438,16 @@
         return divided;
     }
 
+    function grabPickup(ball) {
+        for (var i = pickups.length; i--;) {
+            var pickup = pickups[i];
+            if (pointInCircle(ball, pickup.position)) {
+                pickups.splice(i, 1);
+                ball.pickup = true;
+            };
+        }
+    }
+
     function updateBallPos(ball) {
         ball.setLastPosition(ball.position); // save the balls last good position.            
         ball.position = ball.position.add((ball.velocity.multiply(8))); // add the balls (velocity * 6) to position.
@@ -478,23 +501,29 @@
     }
 
     function update() {
-        var moving = 0;
-        players[0].score = 0;
-        players[1].score = 0;
-
         if (gameActive) {
+            var moving = 0;
+            players[0].score = 0;
+            players[1].score = 0;
+
             for (var i = balls.length; i--;) {
                 var iBall = balls[i],
                     mag = iBall.velocity.magnitude();
 
                 updateBallPos(iBall);
                 checkWallCollision(iBall);
+                grabPickup(iBall);
 
                 for (var j = balls.length; j--;) {
                     var jBall = balls[j];
                     if (iBall != jBall) {
                         if (checkBallCollision(iBall, jBall)) {
                             ballCollisionResponce(iBall, jBall);
+
+                            if (iBall.pickup) {
+                                jBall.owner = jBall.owner === 0 ? 1 : 0;
+                                iBall.pickup = false;
+                            }
                             playSound('bounce');
                         }
                     }
@@ -508,7 +537,7 @@
         }
         draw();
 
-        if (moving === 0 && gameState.isState('game') && gameActive) {
+        if (gameActive && moving === 0 && gameState.isState('game')) {
             dividedBalls = divideBalls();
             gameState.start('divide');
         }
@@ -595,6 +624,7 @@
 
         mouseStart = null;
         balls = [];
+        pickups = [];
         players = [];
         numberOfPlayers = clamp(number, 2, 4);
         currentPlayer = Math.floor(Math.random() * numberOfPlayers);
@@ -686,13 +716,24 @@
         if (player.isComputer) {
             var force = MAX_FORCE / 2;
             mouseCurrent = {
-                x: ball.getX() - Math.floor(Math.random() * force),
+                x: ball.getX() + Math.floor(Math.random() * force) + 10,
                 y: ball.getY() + Math.floor(Math.random() * MAX_FORCE) - force
             };
             mouseIsDown = true;
             setTimeout(function () {
                 plotMouseForce();
             }, 1000);
+        }
+
+        if (Math.floor(Math.random() * 10) === 9) {
+            var pickup = {
+                kind: 0,
+                position: new Otbo.vector(
+                    Math.floor(Math.random() * canvas.width - (baseWidth*2)) + baseWidth,
+                    Math.floor(Math.random() * canvas.height-20)+10
+                    )
+            };
+            pickups.push(pickup);
         }
         gameActive = false;
     }
@@ -800,6 +841,7 @@
         } else {
             options.p2i = i.p2;
         }
+        options.biohazard = i.biohazard;
     }
 
     function initColors() {
@@ -826,7 +868,8 @@
 
         makeImages({
             p1: 'img/craycray.jpg',
-            p2: 'img/spiral.jpg'
+            p2: 'img/spiral.jpg',
+            biohazard: 'img/biohazard.png'
         }, function (i) {
             initImages(i);
             initElements();
@@ -834,7 +877,7 @@
 
         makeAudio({
             bounce: 'sound/bat.mp3',
-            bgmusic: 'sound/Nameless-the_Hackers.mp3'
+            //bgmusic: 'sound/Nameless-the_Hackers.mp3'
         }, function (a) {
             Otbo.sound = a;
         });

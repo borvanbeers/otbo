@@ -36,7 +36,7 @@ Otbo.ball = (function () {
             this.lastPositions.unshift(pos);
             this.lastPositions.pop();
         } else {
-            this.lastPositions.push(pos);
+            this.lastPositions.unshift(pos);
         }
     }
     ball.prototype.getLastPosition = function (idx) {
