@@ -25,19 +25,25 @@
             </div>
         </div>
         <div id="customize" class="backdrop" style="display: none">
+
             <div class="area">
                 <h1>Player 1</h1>
+                <input type="text" id="player1name" /><br />
                 <input type="color" id="player1color" /><br />
+                <div class="clrresult" id="player1result"></div>
                 <input type="file" id="player1image" /><br />
                 <canvas id="player1canvas"></canvas>
             </div>
             <div class="area">
                 <h1>Player 2</h1>
+                <input type="text" id="player2name" /><br />
                 <input type="color" id="player2color" /><br />
+                <div class="clrresult" id="player2result"></div>
                 <input type="file" id="player2image" /><br />
-                <canvas id="player2canvas"></canvas><br />                
+                <canvas id="player2canvas"></canvas>
+                <br />
             </div>
-            <button id="customizeclose">Close</button>
+            <button class="center" id="customizeclose">Close</button>
         </div>
     </div>
     <!-- Scripts -->

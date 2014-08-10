@@ -19,9 +19,30 @@ html,body{
     height: 100%;
 }
 
-.area{
+.area{    
     float: left;
-    width: 50%;
+    width: 40%;
+    padding: 5%;
+}
+
+.area > input{
+    width: 200px;
+    height: 30px;
+    border: none;
+    margin-bottom: 10px;
+}
+
+.clrresult{
+    text-align:center;
+    width: 200px;
+    height: 30px;    
+    line-height: 30px;
+    margin-bottom: 10px;
+}
+
+.center{
+    width: 100px;
+    height: 30px;
 }
 
 .menu {

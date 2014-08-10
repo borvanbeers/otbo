@@ -15,6 +15,7 @@
         menu = d.getElementById('menu'),
         customize = d.getElementById('customize'),
         gameActive = false,
+        rainbow = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'],
         mouseMode = 1,
 		mouseIsDown = false,
 		mouseStart,
@@ -23,7 +24,7 @@
         dividedBalls,
         pickups = [],
 		players = [],
-        winner = -1,
+        winner = 0,
         numberOfPlayers = 2,
 		currentPlayer = 0,
         options = {};
@@ -94,6 +95,9 @@
 	 * Helper methods
 	 */
     //Get radian from degrees
+    function rand(num) {
+        return Math.floor(Math.random() * num);
+    }
     function getRadian(rad) {
         rad = rad || 360;
         return rad * Math.PI / 180;
@@ -178,7 +182,7 @@
     //Randomize array element order in-place. Using Fisher-Yates shuffle algorithm.
     function shuffleArray(array) {
         for (var i = array.length - 1; i > 0; i--) {
-            var j = Math.floor(Math.random() * (i + 1));
+            var j = rand(i + 1);
             var temp = array[i];
             array[i] = array[j];
             array[j] = temp;
@@ -331,10 +335,14 @@
         ctx.font = "120px Verdana";
         ctx.shadowBlur = 20;
         //draw pickups
-        ctx.fillStyle = '#ff0000';
-        ctx.shadowColor = '#ff0000';
+        var lp = gameState.loops % 30 === 0;
         for (var i = 0, l = pickups.length; i < l; i++) {
             var pickup = pickups[i];
+
+            if (lp) pickup.color = pickup.color++ > 5 ? 0 : pickup.color;
+            var color = rainbow[pickup.color];
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
             ctx.beginPath();
             ctx.arc(pickup.position.x, pickup.position.y, 5, 0, 2 * Math.PI, false);
             ctx.fill();            
@@ -602,10 +610,10 @@
 	 */
     function createRandomBalls() {
         for (var i = 10; i--;) {
-            var size = ~~(Math.random() * 50) + 10;
+            var size = rand(50) + 10;
             var ball = new Otbo.ball(
                 (50 + (i * 200)) % (canvas.width - 50),
-				~~(Math.random() * (canvas.height - size * 2)) + size,
+				rand(canvas.height - size * 2) + size,
 				size,
 				0, 0, 0
 			);
@@ -627,11 +635,12 @@
         pickups = [];
         players = [];
         numberOfPlayers = clamp(number, 2, 4);
-        currentPlayer = Math.floor(Math.random() * numberOfPlayers);
+        currentPlayer = rand(numberOfPlayers);
 
         for (var i = 0, l = numberOfPlayers; i < l; i++) {
             var p = 'p' + (i + 1),
                 player = {
+                    name: options[p + 'n'],
                     score: 0,
                     img: options[p + 'i'],
                     balls: shuffleArray(beginBalls.slice(0)),
@@ -654,16 +663,16 @@
         gameState.stop();
 
         //Find winner
-        winner = -1;
-        for (var score = 0, i = players.length; i--;) {
-            if (players[i].score > score) {
-                score = players[i].score;
-                winner = i;
-            }
-        }
-        winner++;
+        var scoreboard = players.slice(0).sort(function (a, b) {
+            return  b.score - a.score;
+        });
 
-        var txt = winner ? 'Winner: player ' + winner : 'Draw',
+        if (scoreboard[0].score === scoreboard[1].score) {
+            winner = 0;
+        } else {
+            winner = scoreboard[0].name;
+        }
+        var txt = winner ? 'Winner: ' + winner : 'What! No winner?',
             fontSize = 100;
         ctx.font = fontSize + "px Verdana";
 
@@ -671,13 +680,13 @@
             x = canvas.width / 2 - textWidth / 2,
             y = canvas.height / 2,
             gradient = ctx.createLinearGradient(x, y, textWidth, 0);
-        gradient.addColorStop(0, 'red');
-        gradient.addColorStop(1 / 6, 'orange');
-        gradient.addColorStop(2 / 6, 'yellow');
-        gradient.addColorStop(3 / 6, 'green');
-        gradient.addColorStop(4 / 6, 'blue');
-        gradient.addColorStop(5 / 6, 'indigo');
-        gradient.addColorStop(1, 'violet');
+        gradient.addColorStop(0,     rainbow[0]);
+        gradient.addColorStop(1 / 6, rainbow[1]);
+        gradient.addColorStop(2 / 6, rainbow[2]);
+        gradient.addColorStop(3 / 6, rainbow[3]);
+        gradient.addColorStop(4 / 6, rainbow[4]);
+        gradient.addColorStop(5 / 6, rainbow[5]);
+        gradient.addColorStop(1,     rainbow[6]);
         ctx.fillStyle = gradient;
         ctx.fillText(txt, x, y);
         /* */
@@ -716,8 +725,8 @@
         if (player.isComputer) {
             var force = MAX_FORCE / 2;
             mouseCurrent = {
-                x: ball.getX() + Math.floor(Math.random() * force) + 10,
-                y: ball.getY() + Math.floor(Math.random() * MAX_FORCE) - force
+                x: ball.getX() + rand(force) + 10,
+                y: ball.getY() + rand(MAX_FORCE) - force
             };
             mouseIsDown = true;
             setTimeout(function () {
@@ -725,12 +734,13 @@
             }, 1000);
         }
 
-        if (Math.floor(Math.random() * 10) === 9) {
+        if (rand(10) === 9) {
             var pickup = {
-                kind: 0,
+                color: 0,
+                kind: 0,//TODO: implement
                 position: new Otbo.vector(
-                    Math.floor(Math.random() * canvas.width - (baseWidth*2)) + baseWidth,
-                    Math.floor(Math.random() * canvas.height-20)+10
+                    rand(middleWidth) + baseWidth,
+                    rand(canvas.height - 40) + 20
                     )
             };
             pickups.push(pickup);
@@ -741,6 +751,10 @@
     function drawImage(img, canvas) {
         var context = canvas.getContext('2d');
         context.clearRect(0, 0, canvas.width, canvas.height);
+        context.beginPath();
+        context.rect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = 'black';
+        context.fill();        
         context.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
@@ -759,22 +773,44 @@
     }
 
     function initElements() {
-        var player1image = d.getElementById('player1image'),
+        var player1name = d.getElementById('player1name'),
+            player1image = d.getElementById('player1image'),
             player1canvas = d.getElementById('player1canvas'),
             player1color = d.getElementById('player1color'),
+            player1result = d.getElementById('player1result'),
+            player2name = d.getElementById('player2name'),
             player2image = d.getElementById('player2image'),
             player2canvas = d.getElementById('player2canvas'),
-            player2color = d.getElementById('player2color');
+            player2color = d.getElementById('player2color'),
+            player2result = d.getElementById('player2result');
+
+        player1name.value = options.p1n;
+        player2name.value = options.p2n;
 
         player1canvas.width = scale;
         player1canvas.height = scale;
         player2canvas.width = scale;
         player2canvas.height = scale;
 
-        player1color.value = options.p1c;
-        player1color.style.backgroundColor = options.p1c;
+        player1color.value = options.p1c;        
+        player1result.style.backgroundColor = options.p1c;
+        player1result.style.color = options.p1cc;
+        player1result.innerHTML = options.p1c;
+
         player2color.value = options.p2c;
-        player2color.style.backgroundColor = options.p2c;
+        player2result.style.backgroundColor = options.p2c;
+        player2result.style.color = options.p2cc;
+        player2result.innerHTML = options.p2c;
+
+        player1name.addEventListener('change', function (e) {            
+            localStorage.setItem('p1n', this.value);
+            options.p1n = this.value;
+        }, false);
+
+        player2name.addEventListener('change', function (e) {
+            localStorage.setItem('p2n', this.value);
+            options.p2n = this.value;
+        }, false);
 
         player1image.addEventListener('change', function (e) {
             handleImage(e, player1canvas, 'p1i');
@@ -790,6 +826,10 @@
 
         d.getElementById('player1').addEventListener('click', function () {
             initGame(1);
+        }, false);
+
+        d.getElementById('how2play').addEventListener('click', function () {
+            alert('Coming soon')
         }, false);
 
         d.getElementById('customization').addEventListener('click', function () {
@@ -808,7 +848,9 @@
                 options.p1c = val;
                 options.p1cc = getContrastColor(val);
                 localStorage.setItem('p1c', val);
-                this.style.backgroundColor = val;
+                player1result.style.backgroundColor = options.p1c;
+                player1result.style.color = options.p1cc;
+                player1result.innerHTML = options.p1c;
             }
         }, false);
 
@@ -818,7 +860,9 @@
                 options.p2c = val;
                 options.p2cc = getContrastColor(val);
                 localStorage.setItem('p2c', val);
-                this.style.backgroundColor = val;
+                player2result.style.backgroundColor = options.p2c;
+                player2result.style.color = options.p2cc;
+                player2result.innerHTML = options.p2c;
             }
         }, false);
         //
@@ -865,6 +909,8 @@
 
     function init() {
         initColors();
+        options.p1n = localStorage.getItem('p1n') || 'Player 1';
+        options.p2n = localStorage.getItem('p2n') || 'Player 2';
 
         makeImages({
             p1: 'img/craycray.jpg',

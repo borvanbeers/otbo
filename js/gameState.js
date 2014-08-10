@@ -20,6 +20,7 @@
     }
     gameState.prototype.start = function (state) {
         this.state = state;
+        this.loops = 0;
         update = states[this.state];
 
         if (pause) {
@@ -40,6 +41,7 @@
             clear();
             update && update();
             queue();
+            instance.loops++;
         }
     }
     function clear() {
