@@ -18,17 +18,16 @@
         <canvas id="otbo"></canvas>
         <div id="menu" class="backdrop">
             <div class="menu">
-                <button id="player2" class="btn">2 Player</button>
-                <button id="player1" class="btn">1 Player (AI)</button>
+                <button id="quick" class="btn">Quick match</button>
                 <button id="how2play" class="btn">How to Play</button>
-                <button id="customization" class="btn">Customization</button>
             </div>
         </div>
         <div id="customize" class="backdrop" style="display: none">
 
             <div class="area">
                 <h1>Player 1</h1>
-                <input type="text" id="player1name" /><br />
+                <input type="checkbox" id="player1computer" /> computer<br />
+                <input type="text" id="player1name" /><br />                
                 <input type="color" id="player1color" /><br />
                 <div class="clrresult" id="player1result"></div>
                 <input type="file" id="player1image" /><br />
@@ -36,6 +35,7 @@
             </div>
             <div class="area">
                 <h1>Player 2</h1>
+                <input type="checkbox" id="player2computer" /> computer<br />
                 <input type="text" id="player2name" /><br />
                 <input type="color" id="player2color" /><br />
                 <div class="clrresult" id="player2result"></div>
@@ -43,7 +43,8 @@
                 <canvas id="player2canvas"></canvas>
                 <br />
             </div>
-            <button class="center" id="customizeclose">Close</button>
+            <button class="center" id="gamestart">Start</button>
+            <button class="center" id="customizeclose">Back</button>
         </div>
     </div>
     <!-- Scripts -->

@@ -267,7 +267,7 @@
 
             for (var i = ringEffect.rings.length; i--;) {
                 ctx.beginPath();
-                ctx.arc(ringEffect.position.x, ringEffect.position.y, ringEffect.rings[i], 0, 2 * Math.PI, false);
+                ctx.arc(ringEffect.position.x, ringEffect.position.y, ringEffect.rings[i].value, 0, 2 * Math.PI, false);
                 ctx.stroke();
             }
         }
@@ -615,20 +615,20 @@
         }
     }
     //mousecurrent touchstart
-    function initGame(number) {
+    function initGame() {
         var big = scale / 2,
             small = big / 3,
             medium = big - small,
             beginBalls = [big, big, medium, medium, small, small];
 
-        clearInterval(timer);
-        menu.style.display = 'none';
+        clearInterval(timer);        
+        customize.style.display = 'none';
 
         mouseStart = null;
         balls = [];
         pickups = [];
         players = [];
-        numberOfPlayers = clamp(number, 2, 4);
+        numberOfPlayers = 2;//clamp(number, 2, 4);
         currentPlayer = rand(numberOfPlayers);
 
         for (var i = 0, l = numberOfPlayers; i < l; i++) {
@@ -639,12 +639,9 @@
                     img: options[p + 'i'],
                     balls: shuffleArray(beginBalls.slice(0)),
                     color: options[p + 'c'],
-                    contrast: options[p + 'cc']
+                    contrast: options[p + 'cc'],
+                    isComputer: options[p + 'ai']
                 };
-
-            if (i === 1 && number === 1) {
-                player.isComputer = true;
-            }
             players.push(player);
         }
         nextMove();
@@ -717,12 +714,15 @@
         mouseMode = 1;
 
         if (player.isComputer) {
-            var force = MAX_FORCE / 2;
+            //Calculate computer Y-Axis and shooting direction
+            var force = MAX_FORCE / 2,
+                y = clamp(rand(canvas.height - mouseStart.radius * 2) + mouseStart.radius, mouseStart.radius, canvas.height - mouseStart.radius);
+            mouseStart.setY(y);
             mouseCurrent = {
-                x: ball.getX() + rand(force) + 10,
-                y: ball.getY() + rand(MAX_FORCE) - force
+                x: currentPlayer === 1 ? mouseStart.getX() + rand(force) + 10: mouseStart.getX() - rand(force) - 10,
+                y: currentPlayer === 1 ? mouseStart.getY() + rand(MAX_FORCE) - force : mouseStart.getY() - rand(MAX_FORCE) + force
             };
-            mouseStart.setY(clamp(rand(canvas.height - 80) + 40, 40, canvas.height - 40));
+            //TODO: computer easeout to position
             mouseIsDown = true;
             setTimeout(function () {
                 plotMouseForce();
@@ -775,14 +775,19 @@
             player1canvas = d.getElementById('player1canvas'),
             player1color = d.getElementById('player1color'),
             player1result = d.getElementById('player1result'),
+            player1computer = d.getElementById('player1computer'),
             player2name = d.getElementById('player2name'),
             player2image = d.getElementById('player2image'),
             player2canvas = d.getElementById('player2canvas'),
             player2color = d.getElementById('player2color'),
-            player2result = d.getElementById('player2result');
+            player2result = d.getElementById('player2result'),
+            player2computer = d.getElementById('player2computer');
 
         player1name.value = options.p1n;
         player2name.value = options.p2n;
+
+        player1computer.checked = options.p1ai;
+        player2computer.checked = options.p2ai;
 
         player1canvas.width = scale;
         player1canvas.height = scale;
@@ -803,40 +808,46 @@
             localStorage.setItem('p1n', this.value);
             options.p1n = this.value;
         }, false);
-
         player2name.addEventListener('change', function (e) {
             localStorage.setItem('p2n', this.value);
             options.p2n = this.value;
         }, false);
 
+        player1computer.addEventListener('change', function (e) {
+            localStorage.setItem('p1ai', this.checked);
+            options.p1ai = this.checked;
+        }, false);
+        player2computer.addEventListener('change', function (e) {
+            localStorage.setItem('p2ai', this.checked);
+            options.p2ai = this.checked;
+        }, false);
+
         player1image.addEventListener('change', function (e) {
             handleImage(e, player1canvas, 'p1i');
         }, false);
-
         player2image.addEventListener('change', function (e) {
             handleImage(e, player2canvas, 'p2i');
         }, false);
-
-        d.getElementById('player2').addEventListener('click', function () {
-            initGame(2);
-        }, false);
-
-        d.getElementById('player1').addEventListener('click', function () {
-            initGame(1);
-        }, false);
-
-        d.getElementById('how2play').addEventListener('click', function () {
-            alert('Coming soon')
-        }, false);
-
-        d.getElementById('customization').addEventListener('click', function () {
+        
+        d.getElementById('quick').addEventListener('click', function () {
             customize.style.display = 'block';
+            menu.style.display = 'none';
             drawImage(options.p1i, player1canvas);
-            drawImage(options.p2i, player2canvas);
+            drawImage(options.p2i, player2canvas);            
         }, false);
-
+        d.getElementById('how2play').addEventListener('click', function () {
+            alert([
+                'Left mouse / one finger - Aim',
+                'Right mouse / multi finger - Drag'
+            ].join('\n'))
+        }, false);
+        
+        d.getElementById('gamestart').addEventListener('click', function () {
+            initGame();
+        }, false);
         d.getElementById('customizeclose').addEventListener('click', function () {
-            customize.style.display = 'none';
+            menu.style.display = 'block';
+            customize.style.display = 'none';            
         }, false);
 
         player1color.addEventListener('change', function (e) {
@@ -850,7 +861,6 @@
                 player1result.innerHTML = options.p1c;
             }
         }, false);
-
         player2color.addEventListener('change', function (e) {
             var val = this.value;
             if (validateHEX(val)) {
@@ -908,6 +918,9 @@
         initColors();
         options.p1n = localStorage.getItem('p1n') || 'Player 1';
         options.p2n = localStorage.getItem('p2n') || 'Player 2';
+
+        options.p1ai = localStorage.getItem('p1ai') === 'true';
+        options.p2ai = localStorage.getItem('p2ai') === 'true';
 
         makeImages({
             p1: 'img/craycray.jpg',

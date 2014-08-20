@@ -25,7 +25,7 @@ html,body{
     padding: 5%;
 }
 
-.area > input{
+.area > input:not([type=checkbox]){
     width: 200px;
     height: 30px;
     border: none;
