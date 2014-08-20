@@ -27,7 +27,8 @@
         winner = 0,
         numberOfPlayers = 2,
 		currentPlayer = 0,
-        options = {};
+        options = {},
+		ringEffect;
 
     //Set width/height to 100&
     canvas.width = window.innerWidth;
@@ -240,13 +241,12 @@
     }
 
     function drawBackground() {
+        ctx.fillStyle = '#000000';
         ctx.beginPath();
         ctx.rect(canvas.width - baseWidth, 0, baseWidth, canvas.height);
-        ctx.fillStyle = players[0].contrast;
         ctx.fill();
         ctx.beginPath();
         ctx.rect(0, 0, baseWidth, canvas.height);
-        ctx.fillStyle = players[1].contrast;
         ctx.fill();
 
         ctx.beginPath();
@@ -259,38 +259,38 @@
         ctx.fill();
     }
 
+    function drawEffects() {
+        //draw ball enter animation
+        if (ringEffect) {
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = ringEffect.color;
+
+            for (var i = ringEffect.rings.length; i--;) {
+                ctx.beginPath();
+                ctx.arc(ringEffect.position.x, ringEffect.position.y, ringEffect.rings[i], 0, 2 * Math.PI, false);
+                ctx.stroke();
+            }
+        }
+
+        //draw pickups
+        var lp = gameState.loops % 30 === 0;
+        for (var i = 0, l = pickups.length; i < l; i++) {
+            var pickup = pickups[i];
+
+            if (lp) pickup.color = pickup.color++ > 5 ? 0 : pickup.color;
+            var color = rainbow[pickup.color];
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.beginPath();
+            ctx.arc(pickup.position.x, pickup.position.y, 5, 0, 2 * Math.PI, false);
+            ctx.fill();
+        }
+    }
+
     function drawBalls() {
         for (var i = balls.length; i--;) {
             var ball = balls[i];
-            /* /
-            if (ball.lastPositions && ball.lastPositions.length > 0) {                
-                //line trail
-                ctx.beginPath();
-                ctx.moveTo(ball.position.x, ball.position.y);
-                for (var j = 0, l = ball.lastPositions.length; j < l; j++) {
-                    ctx.lineTo(ball.lastPositions[j].x, ball.lastPositions[j].y);
-                }
-                ctx.lineWidth = 50;
-                ctx.lineCap = 'round';
-                ctx.strokeStyle = players[ball.owner].contrast;
-                ctx.stroke();
-                // Shadow trail
-                for (var j = ball.lastPositions.length; j--;) {
-                    var lastPos = ball.lastPositions[j];                    
-                    ctx.save();
-                    ctx.globalAlpha = 0.5;
-                    ctx.translate(lastPos.x, lastPos.y);
-                    ctx.rotate((ball.life(0) - ball.velocity.getX() * 16 * (j ? j : 1)) * (Math.PI / 180));
-                    ctx.beginPath();
-                    ctx.arc(0, 0, ball.radius, 0, 2 * Math.PI, false);
-                    ctx.closePath();
-                    ctx.clip();
-                    ctx.drawImage(players[ball.owner].img, -ball.radius, -ball.radius, ball.radius * 2, ball.radius * 2);
-                    ctx.closePath();
-                    ctx.restore();
-                }                
-            }
-            /* */
+
             if (ball.isScore) {
                 ctx.beginPath();
                 ctx.arc(ball.position.x, ball.position.y, ball.radius, 0, 2 * Math.PI, false);
@@ -310,7 +310,6 @@
             if (ball.pickup) {
                 ctx.drawImage(options.biohazard, -32,-32, 64,64);
             }
-
             ctx.closePath();
             ctx.restore();
         }
@@ -333,20 +332,7 @@
             }
         }
         ctx.font = "120px Verdana";
-        ctx.shadowBlur = 20;
-        //draw pickups
-        var lp = gameState.loops % 30 === 0;
-        for (var i = 0, l = pickups.length; i < l; i++) {
-            var pickup = pickups[i];
-
-            if (lp) pickup.color = pickup.color++ > 5 ? 0 : pickup.color;
-            var color = rainbow[pickup.color];
-            ctx.fillStyle = color;
-            ctx.shadowColor = color;
-            ctx.beginPath();
-            ctx.arc(pickup.position.x, pickup.position.y, 5, 0, 2 * Math.PI, false);
-            ctx.fill();            
-        }
+        ctx.shadowBlur = 20;        
         //draw scores
         for (var i = 0, l = players.length; i < l; i++) {
             var player = players[i],
@@ -463,13 +449,13 @@
     }
 
     function checkWallCollision(ball) {
-        if (ball.getX() + (ball.getRadius()) >= canvas.width || ball.getX() - (ball.getRadius()) <= 0) {
+        if (ball.getX() + (ball.radius) >= canvas.width || ball.getX() - (ball.radius) <= 0) {
             ball.velocity.setX(-ball.velocity.getX()); // if collided with a wall on x Axis, reflect Velocity.X.
             ball.position = ball.getLastPosition(0); // reset ball to the last good position (Avoid objects getting stuck in each other).
             playSound('bounce');
         }
 
-        if (ball.getY() - (ball.getRadius()) <= 0 || ball.getY() + (ball.getRadius()) >= canvas.height) { // check for y collisions.
+        if (ball.getY() - (ball.radius) <= 0 || ball.getY() + (ball.radius) >= canvas.height) { // check for y collisions.
             ball.velocity.setY(-ball.velocity.getY()); // if collided with a wall on y Axis, reflect Velocity.Y.
             ball.position = ball.getLastPosition(0);
             playSound('bounce');
@@ -480,7 +466,7 @@
         var xDistance = (ball2.getX() - ball1.getX()); // subtract the X distances from each other. 
         var yDistance = (ball2.getY() - ball1.getY()); // subtract the Y distances from each other. 
         var distanceBetween = pythagoras(xDistance, yDistance); // the distance between the balls is the sqrt of Xsquared + Ysquared.
-        var sumOfRadius = ((ball1.getRadius()) + (ball2.getRadius())); // add the balls radius together
+        var sumOfRadius = ((ball1.radius) + (ball2.radius)); // add the balls radius together
         return (distanceBetween < sumOfRadius); // if the distance between them is less than the sum of radius they have collided.
     }
 
@@ -498,8 +484,8 @@
         // create scalar velocity in the tagential direction.
         var ball1scalarTangential = tangentVector.dot(ball1.velocity);
         var ball2scalarTangential = tangentVector.dot(ball2.velocity);
-        var ball1ScalarNormalAfter = (ball1scalarNormal * (ball1.getMass() - ball2.getMass()) + 2 * ball2.getMass() * ball2scalarNormal) / (ball1.getMass() + ball2.getMass());
-        var ball2ScalarNormalAfter = (ball2scalarNormal * (ball2.getMass() - ball1.getMass()) + 2 * ball1.getMass() * ball1scalarNormal) / (ball1.getMass() + ball2.getMass());
+        var ball1ScalarNormalAfter = (ball1scalarNormal * (ball1.mass - ball2.mass) + 2 * ball2.mass * ball2scalarNormal) / (ball1.mass + ball2.mass);
+        var ball2ScalarNormalAfter = (ball2scalarNormal * (ball2.mass - ball1.mass) + 2 * ball1.mass * ball1scalarNormal) / (ball1.mass + ball2.mass);
         var ball1scalarNormalAfter_vector = normalVector.multiply(ball1ScalarNormalAfter); // ball1Scalar normal doesnt have multiply not a vector.
         var ball2scalarNormalAfter_vector = normalVector.multiply(ball2ScalarNormalAfter);
         var ball1ScalarNormalVector = (tangentVector.multiply(ball1scalarTangential));
@@ -509,6 +495,7 @@
     }
 
     function update() {
+
         if (gameActive) {
             var moving = 0;
             players[0].score = 0;
@@ -531,6 +518,9 @@
                             if (iBall.pickup) {
                                 jBall.owner = jBall.owner === 0 ? 1 : 0;
                                 iBall.pickup = false;
+                            } else if (jBall.pickup) {
+                                iBall.owner = iBall.owner === 0 ? 1 : 0;
+                                jBall.pickup = false;
                             }
                             playSound('bounce');
                         }
@@ -542,6 +532,10 @@
                     moving++;
                 }
             }
+        }
+
+        if (ringEffect && (ringEffect.expand() || gameActive)) {
+            ringEffect = null;
         }
         draw();
 
@@ -581,7 +575,6 @@
                 drawFade(dvdBall.ball, dvdBall.from, 1);
             }
         }
-
         fadePct++;
     }
 
@@ -600,8 +593,9 @@
     }
 
     function draw() {
-        drawBackground();
+        drawBackground();        
         drawBalls();
+        drawEffects();
         drawHud();
     }
 
@@ -728,10 +722,13 @@
                 x: ball.getX() + rand(force) + 10,
                 y: ball.getY() + rand(MAX_FORCE) - force
             };
+            mouseStart.setY(clamp(rand(canvas.height - 80) + 40, 40, canvas.height - 40));
             mouseIsDown = true;
             setTimeout(function () {
                 plotMouseForce();
             }, 1000);
+        } else {
+            ringEffect = new Otbo.ring(ball.getX(), ball.getY(), ball.radius);
         }
 
         if (rand(10) === 9) {

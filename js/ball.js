@@ -1,36 +1,21 @@
 Otbo.ball = (function () {
     // constructor
     function ball(x, y, radiusMass, velX, velY, owner) {
-        this.position = new Otbo.vector();
-        this.position.setX(x);
-        this.position.setY(y);
+        this.position = new Otbo.vector(x, y);
         //Store the last 5 positions of the ball
         this.lastPositions = [];
-
-        this.velocity = new Otbo.vector();
-        this.velocity.setX(velX);
-        this.velocity.setY(velY);
-
-        this.setRadius(radiusMass);
-        this.setMass(radiusMass);
+        this.velocity = new Otbo.vector(velX, velY);
+        this.radius = radiusMass;
+        this.mass = radiusMass;
         //this.setColor(color);
         this.owner = owner;
         this.isScore = false;
         this.lifeTime = 0;
     }
-
     ball.prototype.setX = function (x) { this.position.setX(x); }
     ball.prototype.setY = function (y) { this.position.setY(y); }
-
     ball.prototype.getX = function () { return this.position.getX(); }
     ball.prototype.getY = function () { return this.position.getY(); }
-
-    ball.prototype.setRadius = function (radius) { this.radius = radius; }
-    ball.prototype.getRadius = function () { return this.radius; }
-
-    ball.prototype.setMass = function (mass) { this.mass = mass; }
-    ball.prototype.getMass = function () { return this.mass; }
-
     ball.prototype.setLastPosition = function (pos) {
         if (this.lastPositions.length >= 5) {
             this.lastPositions.unshift(pos);
